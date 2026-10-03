@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zipun — Belajar Bahasa Jepang N5 Dinamis</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./mnn-data.js"></script>
+<script src="./supabase-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{ --bg:#020617; --card:#0f172a; --card2:#1e293b; --line:#1e3a8a33; --pri:#2563eb; --acc:#38bdf8; }
+body{background:radial-gradient(1200px 600px at 20% -10%, #1d4ed822, transparent), radial-gradient(900px 500px at 90% 0%, #0ea5e922, transparent), var(--bg); color:#e2e8f0; font-family:'Plus Jakarta Sans',system-ui,sans-serif; min-height:100vh;}
+.serif-jp{font-family:'Noto Serif JP',serif} .jp-font{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif}
+ruby{ruby-position:over} ruby rt{font-size:.78em;color:#fde68a;font-weight:800;user-select:none;letter-spacing:.02em;text-shadow:0 1px 2px #000}
+.kana-line{font-size:13px;color:#fde68a;background:#f59e0b1a;border:1px solid #f59e0b44;border-radius:.6rem;padding:2px 8px;display:inline-block;margin-top:6px;font-weight:600}
+.roma-line{font-size:12px;color:#cbd5e1}
+.mean-line{font-size:13px;color:#e2e8f0;margin-top:2px}
+.layout{max-width:72rem;margin:0 auto;padding-left:1rem;padding-right:1rem;width:100%}
+@media(min-width:1024px){.bab-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}.bab-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}}
+.card{background:linear-gradient(180deg,#0f172a,#0b1226);border:1px solid #1e3a8a55;border-radius:1.1rem}
+.card-hover{transition:.25s} .card-hover:hover{transform:translateY(-3px);border-color:#38bdf8;box-shadow:0 12px 32px -12px #2563eb66}
+.btn-pri{background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;font-weight:800;transition:.2s;box-shadow:0 8px 24px -8px #2563eb88}
+.btn-pri:hover{filter:brightness(1.12);transform:translateY(-1px)} .btn-ghost{background:#0f172a;border:1px solid #1e40af66} .btn-ghost:hover{border-color:#38bdf8}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.anim{animation:fadeUp .45s ease both} .anim-1{animation-delay:.05s}.anim-2{animation-delay:.12s}.anim-3{animation-delay:.18s}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}} .floaty{animation:floaty 5s ease-in-out infinite}
+@keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.hero{background:linear-gradient(120deg,#1e40af,#2563eb,#0ea5e9,#1e40af);background-size:300% 300%;animation:gradShift 10s ease infinite}
+.ring{transform:rotate(-90deg)} .ring-fg{transition:stroke-dashoffset 1s ease}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#1e40af;border-radius:8px}::-webkit-scrollbar-track{background:#020617}
+.chip{font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid #38bdf855;color:#7dd3fc;background:#0ea5e914}
+.kbd{background:#1e293b;border:1px solid #334155;border-bottom-width:3px;border-radius:.5rem;padding:.1rem .5rem;font-size:11px}
+.toast{animation:fadeUp .3s ease} .flip{perspective:1200px} .flip-inner{transition:transform .5s;transform-style:preserve-3d}
+.confetti{position:fixed;top:-10px;width:8px;height:14px;z-index:99;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+input,select,textarea{outline:none} input:focus,select:focus{border-color:#38bdf8 !important;box-shadow:0 0 0 3px #38bdf833}
+.tab-active{background:#1d4ed8 !important;color:#fff !important;border-color:#38bdf8 !important;box-shadow:0 6px 20px -6px #2563eb}
+</style>
+</head>
+<body class="pb-16">
+<header class="sticky top-0 z-40 backdrop-blur-xl bg-[#020617]/85 border-b border-blue-900/40">
+<div class="layout py-3 flex items-center justify-between gap-3 flex-wrap">
+<div class="flex items-center gap-3 cursor-pointer" id="logo">
+<div class="w-10 h-10 rounded-2xl hero flex items-center justify-center text-xl font-black serif-jp text-white shadow-lg floaty">Z</div>
+<div><h1 class="font-extrabold tracking-tight text-white leading-none">Zipun <span class="text-[10px] align-top chip ml-1">N5 • Bab 1-25</span></h1>
+<p class="text-[11px] text-sky-300/80" id="subtitle">Hafalan + Pola Kalimat • SRS • Biru Modern</p></div>
+</div>
+<div class="flex items-center gap-2 text-[11px] flex-wrap">
+<div class="card px-2.5 py-1.5 flex items-center gap-1.5">🔥 <b id="streak">0</b><span class="text-slate-400">hari</span></div>
+<div class="card px-2.5 py-1.5 flex items-center gap-1.5">⚡ <b id="xp-today" class="text-sky-300">0</b><span class="text-slate-400">XP</span></div>
+<button id="furi-btn" class="btn-ghost rounded-xl px-2.5 py-1.5" title="Tampilkan/sembunyikan hiragana">かな: ON</button>
+<button id="roma-btn" class="btn-ghost rounded-xl px-2.5 py-1.5" title="Tampilkan/sembunyikan romaji">Romaji: ON</button>
+<button id="supa-btn" class="btn-ghost rounded-xl px-2.5 py-1.5" title="Pengaturan Supabase">🔌 DB</button>
+<button id="goal-btn" class="btn-ghost rounded-xl px-2.5 py-1.5">🎯 Target</button>
+</div>
+</div>
+<div id="supa-bar" class="layout pb-2 text-[11px] text-slate-400"></div>
+</header>
+
+<nav class="sticky top-[68px] z-30 bg-[#020617]/90 backdrop-blur border-b border-blue-900/30">
+<div class="layout px-2 py-2 flex gap-1.5 overflow-x-auto text-[12px] font-semibold" id="tabs">
+<button data-tab="home" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">🏠 Beranda</button>
+<button data-tab="lessons" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">📚 Bab</button>
+<button data-tab="flashcard" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">🎴 SRS</button>
+<button data-tab="quiz" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">🎯 Kuis & Ketik</button>
+<button data-tab="pattern" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">🧩 Pola Kalimat</button>
+<button data-tab="challenge" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">⏱️ Tantangan</button>
+<button data-tab="search" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">🔍 Cari</button>
+<button data-tab="board" class="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border border-transparent">🏆 Skor</button>
+</div>
+</nav>
+
+<main id="app" class="layout pt-4"></main>
+<div id="toasts" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+<div class="card p-5 w-full max-w-sm anim">
+<h3 class="font-extrabold text-white mb-1">🎯 Target Mingguan</h3>
+<p class="text-xs text-slate-400 mb-3">Senin–Minggu. XP dari SRS, kuis, pola & tantangan.</p>
+<label class="text-xs text-slate-300">Target XP</label>
+<input id="in-xp" type="number" value="300" class="w-full mt-1 mb-2 bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-sm">
+<label class="text-xs text-slate-300">Target kata hafal</label>
+<input id="in-words" type="number" value="100" class="w-full mt-1 mb-2 bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-sm">
+<label class="text-xs text-slate-300">Target hari aktif</label>
+<input id="in-days" type="number" value="5" class="w-full mt-1 mb-3 bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-sm">
+<div class="flex gap-2"><button id="modal-close" class="flex-1 btn-ghost rounded-xl py-2.5 text-sm">Batal</button>
+<button id="modal-save" class="flex-1 btn-pri rounded-xl py-2.5 text-sm">Simpan</button></div>
+</div>
+</div>
+
+<footer class="layout mt-10 text-center text-[11px] text-slate-500">Zipun • Minna no Nihongo I Bab 1–25 • SRS SM-2 • Data lokal + Supabase • <span id="data-src"></span></footer>
+
+<div id="supa-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+<div class="card p-5 w-full max-w-md anim">
+<h3 class="font-extrabold text-white mb-1">🔌 Koneksi Supabase</h3>
+<p class="text-xs text-slate-400 mb-2" id="supa-status">-</p>
+<label class="text-xs text-slate-300">Supabase URL</label>
+<input id="in-supa-url" placeholder="https://xyz.supabase.co" class="w-full mt-1 mb-2 bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-sm">
+<label class="text-xs text-slate-300">Anon / Publishable Key</label>
+<input id="in-supa-key" placeholder="sb_publishable_... / eyJ..." class="w-full mt-1 mb-2 bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-sm">
+<div class="flex gap-2">
+<button id="supa-test" class="flex-1 btn-ghost rounded-xl py-2.5 text-xs">Tes Koneksi</button>
+<button id="supa-save" class="flex-1 btn-pri rounded-xl py-2.5 text-xs">Simpan & Reload</button>
+</div>
+<div class="flex gap-2 mt-2">
+<button id="supa-clear" class="flex-1 text-[11px] text-slate-400 underline">Hapus override (pakai file)</button>
+<button id="supa-close" class="flex-1 text-[11px] text-slate-400 underline">Tutup</button>
+</div>
+<div id="supa-test-res" class="text-[11px] mt-2 text-slate-300"></div>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const FALLBACK = (typeof LESSON_DATA_FALLBACK!=="undefined")?LESSON_DATA_FALLBACK:[];
+let LESSONS = FALLBACK.map(l=>({id:l.id,title:l.title,vocab:l.vocab||[],grammar:l.grammar||[]}));
+let DATA_SRC = "lokal (mnn-data.js)";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const todayStr=(d=new Date())=>d.toISOString().slice(0,10);
+function weekStart(d=new Date()){const x=new Date(d);const day=(x.getDay()+6)%7;x.setHours(0,0,0,0);x.setDate(x.getDate()-day);return x;}
+const LS={srs:"zipun_srs_v1",log:"zipun_logs_v1",goal:"zipun_goal_v1",fav:"zipun_fav_v1",pat:"zipun_pat_v1"};
+let SRS={}, LOGS={}, GOAL={xp:300,words:100,days:5}, FAV={}, PAT={};
+try{SRS=JSON.parse(localStorage.getItem(LS.srs)||"{}");LOGS=JSON.parse(localStorage.getItem(LS.log)||"{}");GOAL={...GOAL,...JSON.parse(localStorage.getItem(LS.goal)||"{}")};FAV=JSON.parse(localStorage.getItem(LS.fav)||"{}");PAT=JSON.parse(localStorage.getItem(LS.pat)||"{}");}catch(e){}
+const save=k=>{try{localStorage.setItem(LS.srs,JSON.stringify(SRS));localStorage.setItem(LS.log,JSON.stringify(LOGS));localStorage.setItem(LS.goal,JSON.stringify(GOAL));localStorage.setItem(LS.fav,JSON.stringify(FAV));localStorage.setItem(LS.pat,JSON.stringify(PAT));}catch(e){}};
+const key=(lid,i)=>lid+"-"+i;
+function allWords(){const a=[];LESSONS.forEach(l=>l.vocab.forEach((v,i)=>a.push({lid:l.id,title:l.title,idx:i,jp:v[0],kana:v[1],roma:v[2],mean:v[3],k:key(l.id,i)})));return a;}
+function srsGet(k){if(!SRS[k])SRS[k]={ease:2.5,interval:0,reps:0,lapses:0,due:0,mem:false};return SRS[k];}
+// SM-2: quality 0-5 (>=3 benar)
+function srsReview(k,q){const s=srsGet(k);if(q>=3){if(s.reps===0)s.interval=1;else if(s.reps===1)s.interval=6;else s.interval=Math.round(s.interval*s.ease);s.reps++;s.ease=Math.max(1.3,s.ease+(0.1-(5-q)*(0.08+(5-q)*0.02)));}else{s.lapses++;s.reps=0;s.interval=0.02;}s.due=Date.now()+s.interval*864e5;s.mem=(s.reps>=2&&q>=4)||s.mem;save();return s;}
+function dueWords(){const now=Date.now();return allWords().filter(w=>{const s=SRS[w.k];if(!s)return true;return s.due<=now;});}
+function memorizedCount(){return Object.values(SRS).filter(s=>s.mem).length + Object.keys(FAV).length*0; }
+function addXP(n,mins=1,ok=1,tot=1){const t=todayStr();if(!LOGS[t])LOGS[t]={xp:0,mins:0,ok:0,tot:0};LOGS[t].xp+=n;LOGS[t].mins+=mins;LOGS[t].ok+=ok;LOGS[t].tot+=tot;save();updateHeader();syncLog(t);}
+async function syncLog(date){const sc=getSupa();if(!sc)return;try{const u=(await sc.auth.getUser()).data.user;if(!u)return;await sc.from("study_logs").upsert({user_id:u.id,date,xp:LOGS[date].xp,minutes:LOGS[date].mins,correct:LOGS[date].ok,total:LOGS[date].tot},{onConflict:"id"});}catch(e){}}
+function weekStats(){const ws=weekStart();let xp=0,days=0,ok=0,tot=0;for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);const s=todayStr(d);if(LOGS[s]){xp+=LOGS[s].xp||0;ok+=LOGS[s].ok||0;tot+=LOGS[s].tot||0;if((LOGS[s].xp||0)>0)days++;}}return{xp,days,ok,tot,ws};}
+function streak(){let s=0;let d=new Date();if(!LOGS[todayStr(d)])d.setDate(d.getDate()-1);while(LOGS[todayStr(d)]&&LOGS[todayStr(d)].xp>0){s++;d.setDate(d.getDate()-1);}return s;}
+function getSupa(){try{if(window.supabaseClient)return window.supabaseClient;}catch(e){} return null;}
+function supaStatus(){try{return window.zipunSupaStatus||{mode:"offline",reason:"unknown"};}catch(e){return{mode:"offline",reason:"err"}}}
+function updateHeader(){$("#streak").textContent=streak();$("#xp-today").textContent=(LOGS[todayStr()]?.xp||0);const st=supaStatus();$("#data-src").textContent=DATA_SRC+(st.mode==="online"?" + Supabase 🟢":" (offline 🟡)");const fb=$("#furi-btn");if(fb)fb.textContent="かな: "+(S.showFuri?"ON":"OFF");const rb=$("#roma-btn");if(rb)rb.textContent="Romaji: "+(S.showRoma?"ON":"OFF");}
+function toast(msg){const t=document.createElement("div");t.className="toast card px-3 py-2 text-xs border-sky-500/50";t.innerHTML=msg;$("#toasts").appendChild(t);setTimeout(()=>t.remove(),2600);}
+function confetti(n=40){for(let i=0;i<n;i++){const c=document.createElement("div");c.className="confetti";c.style.left=Math.random()*100+"vw";c.style.background=["#38bdf8","#2563eb","#facc15","#f472b6","#34d399"][i%5];c.style.animationDuration=(1.5+Math.random()*1.5)+"s";document.body.appendChild(c);setTimeout(()=>c.remove(),3000);}}
+function speak(t,rate=0.85){try{ if(!("speechSynthesis" in window))return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t);u.lang="ja-JP";u.rate=rate;speechSynthesis.speak(u);}catch(e){}}
+function ruby(jp,hira){const showF=(typeof S!=="undefined")?S.showFuri:true;if(!hira||jp===hira||!showF)return `<span class="jp-font font-bold text-xl text-white">${esc(jp)}</span>`;return `<ruby class="jp-font font-bold text-xl text-white">${esc(jp)}<rt>${esc(hira)}</rt></ruby>`;}
+function kanaLine(hira,roma){let h="";if((typeof S==="undefined"||S.showFuri)&&hira)h+=`<span class="kana-line">🈁 ${esc(hira)}</span>`;if((typeof S==="undefined"||S.showRoma)&&roma)h+=` <span class="roma-line">${esc(roma)}</span>`;return h;}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+let S={tab:"home",lesson:null,showRoma:true,showFuri:true,fcList:[],fcIdx:0,flip:false,quiz:{mode:"pg-jp",q:[],i:0,score:0,ans:null,curOpts:[]},patLesson:1,patIdx:0,patMode:"belajar",patQuiz:null,chal:{active:false,sec:300,q:[],i:0,score:0,timer:null}};
+try{const _f=JSON.parse(localStorage.getItem("zipun_view_v1")||"{}");if(typeof _f.showFuri==="boolean")S.showFuri=_f.showFuri;if(typeof _f.showRoma==="boolean")S.showRoma=_f.showRoma;}catch(e){}
+function saveView(){try{localStorage.setItem("zipun_view_v1",JSON.stringify({showFuri:S.showFuri,showRoma:S.showRoma}));}catch(e){}}
+
+function setTab(t){S.tab=t;if(t==="flashcard"&&!S.fcList.length)resetSRSQueue();render();}
+function resetSRSQueue(){let d=dueWords();if(d.length<5)d=shuffle(allWords()).slice(0,20);else d=shuffle(d).slice(0,20);S.fcList=d;S.fcIdx=0;S.flip=false;}
+function quizInit(mode){S.quiz.mode=mode||S.quiz.mode;let pool=dueWords();if(pool.length<8)pool=allWords();pool=shuffle(pool).slice(0,15);S.quiz.q=pool;S.quiz.i=0;S.quiz.score=0;S.quiz.ans=null;newQuizOpts();}
+function newQuizOpts(){const cur=S.quiz.q[S.quiz.i];if(!cur)return;const all=allWords().filter(w=>w.k!==cur.k);S.quiz.curOpts=shuffle([cur,...shuffle(all).slice(0,3)]);S.quiz.ans=null;}
+
+// ---- Pola Kalimat enrichment ----
+function stripTags(s){return String(s).replace(/<[^>]+>/g,"");}
+function patternDetail(lid,gi){
+  const L=LESSONS.find(l=>l.id===lid); const raw=L.grammar[gi]||"";
+  const title=(raw.match(/<b>(.*?)<\/b>/)||[,"Pola"])[1];
+  const desc=stripTags(raw).replace(title,"").replace(/^ — /,"");
+  // contoh + breakdown generik per bab agar detail & tidak kaku
+  const bank={
+    1:{ex:[["わたしは 学生です","わたしは がくせいです","Saya adalah murid"],["ミラーさんは 会社員じゃありません","ミラーさんは かいしゃいんじゃありません","Sdri Miller bukan karyawan"]],tips:"は menandai topik. Bukan partikel subjek が."},
+    4:{ex:[["7時に 起きます","7じに おきます","Bangun jam 7"],["6時から 9時まで 働きます","6じから 9じまで はたらきます","Bekerja dari jam 6 sampai 9"]],tips:"に wajib untuk jam/hari spesifik, jangan pakai untuk 毎日・昨日."},
+    6:{ex:[["ご飯を 食べます","ごはんを たべます","Makan nasi"],["図書館で 勉強します","としょかんで べんきょうします","Belajar di perpustakaan"]],tips:"を = objek, で = tempat aksi."},
+    14:{ex:[["ドアを 開けてください","ドアを あけてください","Tolong buka pintunya"],["今 ご飯を 食べています","いま ごはんを たべています","Sekarang sedang makan"]],tips:"て-ください = permintaan, て-います = sedang berlangsung."},
+  };
+  const b=bank[lid]||{ex:[["例文を 音読しましょう","れいぶんを おんどくしましょう","Mari baca contoh dengan suara"],["毎日 5分 練習します","まいにち 5ふん れんしゅうします","Latihan 5 menit tiap hari"]],tips:"Hafalkan 1 pola + 2 contoh per hari, lalu buat 1 kalimat sendiri."};
+  return{title,desc,ex:b.ex,tips:b.tips,raw};
+}
+function patternQuiz(lid,gi){
+  const d=patternDetail(lid,gi); const type=["susun","isian","ubah"][Math.floor(Math.random()*3)];
+  if(type==="susun"){const s=d.ex[0][0].split(" ");const sh=shuffle(s);return{type,q:"Susun jadi kalimat benar:",tokens:sh,answer:s.join(" "),hint:d.title};}
+  if(type==="isian"){return{type,q:`Lengkapi: ${d.title}`,answer:d.ex[0][0],hint:d.ex[0][2]};}
+  return{type,q:`Ubah ke bentuk sopan/lampau sesuai pola: ${d.title}`,answer:d.ex[0][0],hint:d.ex[0][2]};
+}
+
+// ---- Challenge ----
+function chalStart(){const pool=shuffle(allWords()).slice(0,12);const pats=[];for(let i=0;i<3;i++){const L=LESSONS[Math.floor(Math.random()*LESSONS.length)];pats.push({lid:L.id,gi:Math.floor(Math.random()*L.grammar.length),isPat:true});}S.chal={active:true,sec:300,q:shuffle([...pool.map(w=>({w})),...pats]),i:0,score:0,timer:setInterval(()=>{S.chal.sec--;const el=$("#chal-timer");if(el)el.textContent=fmt(S.chal.sec);if(S.chal.sec<=0)chalFinish();},1000)};render();}
+function fmt(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
+function chalFinish(){clearInterval(S.chal.timer);S.chal.active=false;const sc=S.chal.score;addXP(sc*10,5,sc,S.chal.q.length);confetti(60);render();}
+
+// ---------- RENDER ----------
+function render(){
+  $$("#tabs .tab-btn").forEach(b=>{const on=b.dataset.tab===S.tab||(S.tab==="lessons"&&b.dataset.tab==="lessons");b.className="tab-btn whitespace-nowrap px-3 py-2 rounded-xl border "+(on?"tab-active border-sky-400":"border-transparent text-slate-400 hover:text-sky-300 hover:bg-slate-900");});
+  updateHeader(); const st=supaStatus(); const bar=$("#supa-bar");
+  if(bar) bar.innerHTML = st.mode==="online"
+    ? `🟢 <b class="text-emerald-300">Supabase aktif</b> <span class="text-slate-500">${esc(st.url||"")}</span> — <button id="supa-bar-btn" class="underline text-sky-300">pengaturan</button>`
+    : `🟡 <b class="text-amber-300">Mode offline</b> — ${esc(st.reason||"")} — <button id="supa-bar-btn" class="underline text-sky-300">🔌 atur DB / tes koneksi</button>`;
+  const bb=$("#supa-bar-btn"); if(bb) bb.onclick=openSupaModal;
+  const A=$("#app");
+  if(S.tab==="home")A.innerHTML=vHome();
+  else if(S.tab==="lessons")A.innerHTML=S.lesson?vLessonDetail(S.lesson):vLessons();
+  else if(S.tab==="flashcard")A.innerHTML=vFlash();
+  else if(S.tab==="quiz")A.innerHTML=vQuiz();
+  else if(S.tab==="pattern")A.innerHTML=S.patModeDetail?vPatDetail():vPat();
+  else if(S.tab==="challenge")A.innerHTML=vChal();
+  else if(S.tab==="search")A.innerHTML=vSearch();
+  else if(S.tab==="board")A.innerHTML=vBoard();
+  bind();
+}
+function weekRing(pct){const c=2*Math.PI*26;return `<svg width="72" height="72" class="ring"><circle cx="36" cy="36" r="26" stroke="#1e293b" stroke-width="8" fill="none"/><circle cx="36" cy="36" r="26" stroke="url(#g)" stroke-width="8" fill="none" stroke-linecap="round" class="ring-fg" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct)}"/><defs><linearGradient id="g"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs></svg>`;}
+function vHome(){
+  const all=allWords(); const due=dueWords().length; const mem=Object.values(SRS).filter(s=>s.mem).length;
+  const ws=weekStats(); const pct=Math.min(1,ws.xp/Math.max(1,GOAL.xp));
+  const daysArr=[];for(let i=0;i<7;i++){const d=new Date(weekStart());d.setDate(d.getDate()+i);const k=todayStr(d);daysArr.push({d,xp:LOGS[k]?.xp||0});}
+  const maxXp=Math.max(10,...daysArr.map(x=>x.xp));
+  return `
+  <div class="hero rounded-3xl p-6 text-white shadow-2xl anim relative overflow-hidden">
+    <div class="absolute -right-8 -top-8 text-[120px] opacity-15 serif-jp select-none">語</div>
+    <div class="text-[11px] font-bold tracking-widest opacity-80">ZIPUN • MINNA NO NIHONGO I</div>
+    <h2 class="text-2xl font-black mt-1">Hari ini mau naik berapa XP? ⚡</h2>
+    <p class="text-sm opacity-80">${mem}/${all.length} kata hafal • ${due} jatuh tempo SRS • Streak ${streak()} hari</p>
+    <div class="flex gap-2 mt-4">
+      <button data-a="go" data-t="flashcard" class="bg-white text-blue-700 font-extrabold text-xs px-4 py-2.5 rounded-xl">🎴 Review SRS (${due})</button>
+      <button data-a="go" data-t="challenge" class="bg-blue-950/60 border border-white/30 font-bold text-xs px-4 py-2.5 rounded-xl">⏱️ Challenge 5:00</button>
+      <button data-a="go" data-t="pattern" class="bg-blue-950/60 border border-white/30 font-bold text-xs px-4 py-2.5 rounded-xl">🧩 Pola</button>
+    </div>
+  </div>
+  <div class="grid grid-cols-3 gap-2 mt-3 anim anim-1">
+    <div class="card p-3 text-center"><div class="text-[11px] text-slate-400">Minggu ini</div><div class="text-xl font-black text-sky-300">${ws.xp}<span class="text-xs text-slate-400">/${GOAL.xp} XP</span></div><div class="text-[11px] text-slate-400">${ws.days}/${GOAL.days} hari aktif</div></div>
+    <div class="card p-3 text-center"><div class="text-[11px] text-slate-400">Akurasi minggu</div><div class="text-xl font-black text-white">${ws.tot?Math.round(ws.ok/ws.tot*100):0}%</div><div class="text-[11px] text-slate-400">${ws.ok}/${ws.tot} benar</div></div>
+    <div class="card p-3 flex items-center justify-center gap-2"><div class="relative">${weekRing(pct)}<div class="absolute inset-0 flex items-center justify-center text-sm font-black">${Math.round(pct*100)}%</div></div><div class="text-[11px] text-slate-300">Target<br><b class="text-sky-300">mingguan</b></div></div>
+  </div>
+  <div class="card p-4 mt-3 anim anim-2"><div class="text-xs font-bold mb-2">📊 XP 7 hari (Senin–Minggu)</div>
+    <div class="flex items-end gap-2 h-24">${daysArr.map((x,i)=>`<div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-lg bg-gradient-to-t from-blue-700 to-sky-400 transition-all" style="height:${Math.round(x.xp/maxXp*80)+4}px;opacity:${x.xp?1:.25}"></div><div class="text-[10px] ${todayStr(x.d)===todayStr()?"text-sky-300 font-bold":"text-slate-500"}">${"SSSRKJS"[i]||"M"}</div></div>`).join("")}</div>
+  </div>
+  <h3 class="font-bold text-sm mt-5 mb-2">📚 Lanjut per Bab <span class="text-slate-500 font-normal">• 25 bab → 8 minggu</span></h3>
+  <div class="bab-grid space-y-2 lg:space-y-0">${LESSONS.map(l=>{let c=0;l.vocab.forEach((_,i)=>{if(SRS[key(l.id,i)]?.mem)c++;});const p=Math.round(c/l.vocab.length*100);const wk=Math.ceil(l.id/3.2);return `<div data-a="open" data-id="${l.id}" class="card card-hover p-3 flex items-center justify-between cursor-pointer anim"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl ${c===l.vocab.length?"bg-emerald-500":"hero"} flex items-center justify-center font-black text-white text-sm">${c===l.vocab.length?"✓":l.id}</div><div><div class="text-[13px] font-bold text-white">Bab ${l.id}: ${esc(l.title)}</div><div class="text-[11px] text-slate-400">Minggu ${wk} • ${c}/${l.vocab.length} • ${p}% • ${l.grammar.length} pola</div><div class="w-40 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden"><div class="h-full bg-gradient-to-r from-blue-600 to-sky-400 rounded-full transition-all" style="width:${p}%"></div></div></div></div><div class="text-slate-500">›</div></div>`;}).join("")}</div>`;
+}
+function vLessons(){return `<h2 class="font-extrabold text-white mb-2">📚 Semua Bab</h2><div class="bab-grid">`+LESSONS.map(l=>`<div data-a="open" data-id="${l.id}" class="card card-hover p-3 mb-2 lg:mb-0 flex justify-between cursor-pointer"><b class="text-sm text-white">Bab ${l.id}: ${esc(l.title)}</b><span class="text-xs text-sky-300">${l.vocab.length} kata • ${l.grammar.length} pola ›</span></div>`).join("")+`</div>`;}
+function vLessonDetail(id){
+  const L=LESSONS.find(l=>l.id===id);let c=0;L.vocab.forEach((_,i)=>{if(SRS[key(id,i)]?.mem)c++;});
+  return `<button data-a="back" class="text-xs text-sky-300 mb-2">‹ Kembali</button>
+  <div class="card p-4 mb-3"><div class="chip w-fit">BAB ${L.id} • Minggu ${Math.ceil(L.id/3.2)}</div><h2 class="text-lg font-black text-white serif-jp">${esc(L.title)}</h2><div class="text-xs text-slate-400">${c}/${L.vocab.length} hafal</div>
+  <div class="flex gap-2 mt-3"><button data-a="srs-bab" data-id="${L.id}" class="btn-pri text-xs px-3 py-2 rounded-xl">🎴 SRS Bab ini</button><button data-a="quiz-bab" data-id="${L.id}" class="btn-ghost text-xs px-3 py-2 rounded-xl">🎯 Kuis Bab</button><button data-a="pat-bab" data-id="${L.id}" class="btn-ghost text-xs px-3 py-2 rounded-xl">🧩 Pola</button></div></div>
+  <h3 class="text-xs font-bold text-slate-300 mb-2">KOSAKATA (${L.vocab.length}) — Kanji besar, hiragana kuning jelas di bawah, 🔊 dengar</h3>
+  <div class="card divide-y divide-blue-950 mb-4">${L.vocab.map((v,i)=>{const k=key(id,i);const m=SRS[k]?.mem;return `<div class="p-3 flex items-center justify-between gap-2"><div class="min-w-0"><div>${ruby(v[0],v[1])}</div><div class="mt-1">${kanaLine(v[1],v[2])}</div><div class="mean-line">🇮🇩 ${esc(v[3])}</div>${SRS[k]?`<div class="text-[10px] text-sky-400/80 mt-1">SM-2: reps ${SRS[k].reps} • ease ${SRS[k].ease.toFixed(2)} • due ${SRS[k].interval<1?"hari ini":Math.round(SRS[k].interval)+"h"}</div>`:""}</div><div class="flex gap-1.5 shrink-0"><button data-a="speak" data-t="${esc(v[1]||v[0])}" class="btn-ghost rounded-lg px-2 py-1.5">🔊</button><button data-a="mem" data-l="${id}" data-i="${i}" class="rounded-lg px-2 py-1.5 text-xs font-bold ${m?"bg-emerald-500 text-white":"btn-ghost text-slate-300"}">${m?"✓ Hafal":"+ Hafal"}</button></div></div>`;}).join("")}</div>
+  <h3 class="text-xs font-bold text-slate-300 mb-2">POLA KALIMAT RINGKAS</h3>
+  <div class="space-y-2 mb-6">${L.grammar.map((g,gi)=>`<div data-a="pat-open" data-l="${id}" data-g="${gi}" class="card card-hover p-3 cursor-pointer text-xs"><span class="text-sky-200">${g}</span><div class="text-sky-400 text-[11px] mt-1">Pelajari + latihan →</div></div>`).join("")}</div>`;
+}
+function vFlash(){
+  if(!S.fcList.length)resetSRSQueue();
+  const w=S.fcList[S.fcIdx%S.fcList.length]; if(!w)return `<div class="card p-8 text-center">Kosong</div>`;
+  const s=srsGet(w.k);
+  return `<div class="flex justify-between items-center mb-2"><h2 class="font-bold text-sm">🎴 SRS Review — ${S.fcIdx+1}/${S.fcList.length}</h2><span class="chip">due: ${dueWords().length}</span></div>
+  <div data-a="flip" class="flip cursor-pointer"><div class="card p-8 text-center min-h-[240px] flex flex-col items-center justify-center anim ${S.flip?"border-emerald-400":"hover:border-sky-400"}">
+  ${!S.flip?`<div class="text-[11px] text-slate-400 tracking-widest">BACA • DENGAR • TEBAK ARTI</div><div class="my-3">${ruby(w.jp,w.kana)}</div><div class="mt-1">${kanaLine(w.kana,w.roma)}</div><div class="text-[11px] text-slate-500 mt-2">Bab ${w.lid} • klik untuk balik • 🔊 dengar dulu • toggle かな/Romaji di atas</div>`:`<div class="text-[11px] text-emerald-300 tracking-widest">ARTI</div><div class="text-xl font-black text-white my-2">${esc(w.mean)}</div><div class="mt-1">${ruby(w.jp,w.kana)}</div><div class="mt-1">${kanaLine(w.kana,w.roma)}</div>`}</div></div>
+  <div class="flex gap-2 mt-3"><button data-a="speak" data-t="${esc(w.kana||w.jp)}" class="btn-ghost rounded-xl px-3 py-3">🔊</button>
+  <button data-a="grade" data-q="1" class="flex-1 bg-red-500/20 border border-red-500/50 text-red-200 font-bold text-xs rounded-xl py-3">✋ Lupa<br><span class="font-normal opacity-70">muncul lagi besok (SM-2)</span></button>
+  <button data-a="grade" data-q="5" class="flex-1 bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 font-bold text-xs rounded-xl py-3">👍 Ingat<br><span class="font-normal opacity-70">interval x${s.ease.toFixed(1)}</span></button></div>
+  <div class="flex gap-2 mt-2"><button data-a="fc-prev" class="flex-1 btn-ghost rounded-xl py-2.5 text-xs">◀ Prev</button><button data-a="fc-next" class="flex-1 btn-pri rounded-xl py-2.5 text-xs">Next ▶</button></div>
+  <p class="text-[11px] text-slate-500 mt-2">SM-2: reps ${s.reps} • interval ${s.interval<1?"<1 hari":s.interval.toFixed(1)+" hari"} • ease ${s.ease.toFixed(2)} • lapses ${s.lapses}</p>`;
+}
+function vQuiz(){
+  if(!S.quiz.q.length)quizInit("pg-jp");
+  const w=S.quiz.q[S.quiz.i]; if(!w)return `<div class="card p-6 text-center">Selesai! <button data-a="q-restart" class="btn-pri px-3 py-2 rounded-xl text-xs ml-2">Ulangi</button></div>`;
+  if(S.quiz.i>=S.quiz.q.length)return `<div class="card p-8 text-center anim"><div class="text-4xl">🎉</div><h2 class="font-black text-white">Kuis selesai!</h2><p class="text-xs text-slate-400">Skor ${S.quiz.score}/${S.quiz.q.length}</p><button data-a="q-restart" class="btn-pri rounded-xl px-4 py-2.5 text-xs mt-3">Main lagi</button></div>`;
+  const modes=[["pg-jp","🇯🇵→🇮🇩 PG"],["pg-id","🇮🇩→🇯🇵 PG"],["type","⌨️ Ketik"],["listen","🎧 Dengar+Ketik"]];
+  let body="";
+  if(S.quiz.mode.startsWith("pg")){
+    body=`<div class="card p-6 text-center mb-3">${S.quiz.mode==="pg-jp"?`<div>${ruby(w.jp,w.kana)}</div><div class="mt-1">${kanaLine(w.kana,w.roma)}</div>`:`<div class="text-xs text-slate-400">Pilih Jepang untuk:</div><div class="text-xl font-black text-white">${esc(w.mean)}</div>`}</div>
+    <div class="space-y-2">${S.quiz.curOpts.map(o=>{let cls="card card-hover";if(S.quiz.ans){if(o.k===w.k)cls="bg-emerald-900/60 border border-emerald-400 p-3 rounded-2xl";else if(o.k===S.quiz.ans)cls="bg-red-900/60 border border-red-400 p-3 rounded-2xl";else cls="opacity-40 card p-3";}else cls+=" p-3";return `<button data-a="q-ans" data-k="${o.k}" ${S.quiz.ans?"disabled":""} class="${cls} w-full text-left text-sm">${S.quiz.mode==="pg-jp"?esc(o.mean):esc(o.jp)+` <span class="kana-line" style="font-size:11px">${esc(o.kana)}</span>`} ${S.quiz.ans&&o.k===w.k?"✓":""}</button>`;}).join("")}</div>
+    ${S.quiz.ans?`<button data-a="q-next" class="btn-pri w-full rounded-xl py-3 text-xs mt-3">Lanjut →</button>`:`<p class="text-[11px] text-slate-500 mt-2">Salah = masuk SRS besok. Benar +10 XP.</p>`}`;
+  } else {
+    const listen=S.quiz.mode==="listen";
+    body=`<div class="card p-6 text-center mb-3"><div class="text-xs text-slate-400">${listen?"🎧 Dengarkan lalu ketik kana/kanjinya (boleh putar ulang)":"⌨️ Ketik bahasa Jepang untuk:"}</div>
+    ${listen?`<div class="text-4xl my-2">🔊</div><button data-a="speak" data-t="${esc(w.kana||w.jp)}" class="btn-pri px-4 py-2 rounded-xl text-xs">▶ Putar suara</button><div class="mt-2 text-[11px] text-amber-200">Petunjuk kana disembunyikan — dengarkan baik-baik</div>`:`<div class="text-xl font-black text-white mt-1">${esc(w.mean)}</div><div class="mt-1"><span class="text-[11px] text-slate-400">Bab ${w.lid} • kana muncul setelah jawab • toggle かな di atas untuk latihan</span></div>`}
+    <div class="text-[11px] text-slate-500 mt-2">Jawaban benar: disembunyikan (cek setelah jawab)</div></div>
+    ${S.quiz.ans?`<div class="card p-3 text-sm ${S.quiz.ans==="ok"?"border-emerald-400":"border-red-400"}">${S.quiz.ans==="ok"?"✅ Benar! +15 XP":"❌ Kurang tepat. Kunci: <b>"+esc(w.jp)+" ("+esc(w.kana)+")</b>"}<br><span class="text-xs text-slate-400">${esc(w.mean)}</span></div><button data-a="q-next" class="btn-pri w-full rounded-xl py-3 text-xs mt-3">Lanjut →</button>`
+    :`<div class="flex gap-2"><input id="type-in" placeholder="ketik kana/kanji di sini..." class="flex-1 bg-slate-900 border border-blue-900 rounded-xl p-3 text-sm"><button data-a="q-type" class="btn-pri px-4 rounded-xl text-sm">Cek</button></div><div class="flex gap-2 mt-2"><button data-a="speak" data-t="${esc(w.kana||w.jp)}" class="btn-ghost px-3 py-2 rounded-xl text-xs">🔊 Dengar</button><span class="text-[11px] text-slate-500 self-center">Enter untuk cek • toleransi kana</span></div>`}`;
+  }
+  return `<div class="flex justify-between items-center mb-2"><h2 class="font-bold text-sm">🎯 Kuis & Latihan Ketik</h2><span class="text-[11px] text-slate-400">${S.quiz.i+1}/${S.quiz.q.length} • skor ${S.quiz.score}</span></div>
+  <div class="flex gap-1.5 mb-3 flex-wrap">${modes.map(m=>`<button data-a="q-mode" data-m="${m[0]}" class="text-[11px] px-2.5 py-1.5 rounded-lg border ${S.quiz.mode===m[0]?"tab-active":"btn-ghost text-slate-300"}">${m[1]}</button>`).join("")}</div>${body}`;
+}
+function vPat(){
+  return `<h2 class="font-extrabold text-white">🧩 Pola Kalimat <span class="text-xs font-normal text-slate-400">— biar nggak cuma hafal kata</span></h2>
+  <p class="text-xs text-slate-400 mb-3">Pilih bab → pilih pola → baca bedah + contoh + latihan susun/isian/ubah bentuk.</p>
+  <div class="bab-grid">${LESSONS.map(l=>`<div data-a="pat-bab" data-id="${l.id}" class="card card-hover p-3 cursor-pointer flex justify-between items-center"><div><b class="text-sm text-white">Bab ${l.id}: ${esc(l.title)}</b><div class="text-[11px] text-sky-300">${l.grammar.length} pola • ${Object.keys(PAT).filter(k=>k.startsWith(l.id+"-")).length} dikuasai</div></div><span>›</span></div>`).join("")}</div>`;
+}
+function vPatDetail(){
+  const L=LESSONS.find(l=>l.id===S.patLesson);
+  if(S.patModeDetail==="list")return `<button data-a="pat-back" class="text-xs text-sky-300">‹ Semua pola</button><h2 class="font-black text-white mt-1">Bab ${L.id}: ${esc(L.title)}</h2><div class="space-y-2 mt-2">${L.grammar.map((g,gi)=>{const d=patternDetail(L.id,gi);const done=PAT[L.id+"-"+gi];return `<div data-a="pat-open" data-l="${L.id}" data-g="${gi}" class="card card-hover p-3 cursor-pointer"><div class="text-sm text-sky-100 font-bold">${esc(d.title)}</div><div class="text-xs text-slate-400">${esc(d.desc)}</div><div class="mt-1">${done?'<span class="chip">✓ dikuasai</span>':'<span class="chip">latihan →</span>'}</div></div>`;}).join("")}</div>`;
+  const d=patternDetail(S.patLesson,S.patIdx);
+  let ex=`<button data-a="pat-list" data-id="${S.patLesson}" class="text-xs text-sky-300">‹ Daftar pola Bab ${S.patLesson}</button>
+  <div class="hero rounded-2xl p-5 mt-2 text-white anim"><div class="text-[11px] opacity-80 tracking-widest">POLA • BAB ${S.patLesson}</div><h2 class="text-xl font-black">${esc(d.title)}</h2><p class="text-sm opacity-90 mt-1">${esc(d.desc)}</p><div class="text-[11px] mt-2 bg-black/25 rounded-xl p-2">💡 ${esc(d.tips)}</div></div>
+  <div class="card p-4 mt-2"><h3 class="text-xs font-bold text-sky-300 mb-2">BEDAH STRUKTUR</h3><div class="text-xs bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-slate-200">${esc(d.raw)}</div>
+  <h3 class="text-xs font-bold text-sky-300 mt-3 mb-2">CONTOH + SUARA (kanji + hiragana kuning jelas)</h3>${d.ex.map(e=>`<div class="flex justify-between items-center gap-2 bg-slate-900 border border-blue-900/50 rounded-xl p-2.5 mb-1.5 text-sm"><div><div class="font-bold text-white text-base">${esc(e[0])}</div><div class="mt-1"><span class="kana-line">${esc(e[1])}</span></div><div class="text-[11px] text-slate-300 mt-1">🇮🇩 ${esc(e[2])}</div></div><button data-a="speak" data-t="${esc(e[1])}" class="btn-ghost rounded-lg px-2 py-1.5 shrink-0">🔊</button></div>`).join("")}</div>
+  <div class="card p-4 mt-2"><h3 class="text-xs font-bold text-white mb-2">✍️ LATIHAN POLA</h3><div id="pat-q">${patQHtml()}</div></div>`;
+  return ex;
+}
+function patQHtml(){
+  if(!S.patQuiz)S.patQuiz=patternQuiz(S.patLesson,S.patIdx);
+  const q=S.patQuiz;
+  if(q.type==="susun")return `<p class="text-sm mb-2">${esc(q.q)}</p><div class="flex flex-wrap gap-1.5 mb-2">${q.shuf||(q.shuf=shuffle(q.answer.split(" ")) ).map((t,i)=>`<button data-a="pat-tok" data-t="${esc(t)}" class="btn-ghost px-2.5 py-1.5 rounded-lg text-sm">${esc(t)}</button>`).join("")}</div><div class="text-xs text-slate-400">Jawabanmu: <b id="pat-build" class="text-white"></b></div><div class="flex gap-2 mt-2"><button data-a="pat-check-susun" class="btn-pri text-xs px-3 py-2 rounded-xl">Cek</button><button data-a="pat-new" class="btn-ghost text-xs px-3 py-2 rounded-xl">Soal baru</button></div><div id="pat-fb" class="text-xs mt-2"></div>`;
+  return `<p class="text-sm mb-1">${esc(q.q)}</p><p class="text-[11px] text-slate-400 mb-2">Petunjuk: ${esc(q.hint)}</p><div class="flex gap-2"><input id="pat-in" class="flex-1 bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-sm" placeholder="tulis jawaban..."><button data-a="pat-check" class="btn-pri px-3 rounded-xl text-sm">Cek</button></div><div class="flex gap-2 mt-2"><button data-a="speak" data-t="${esc(q.answer)}" class="btn-ghost text-xs px-3 py-2 rounded-xl">🔊 Dengar kunci</button><button data-a="pat-new" class="btn-ghost text-xs px-3 py-2 rounded-xl">Soal baru</button></div><div id="pat-fb" class="text-xs mt-2"></div>`;
+}
+function vChal(){
+  if(!S.chal.active&&!S.chal.q.length)return `<div class="hero rounded-3xl p-6 text-white anim"><div class="text-[11px] tracking-widest opacity-80">DAILY CHALLENGE • 5 MENIT</div><h2 class="text-2xl font-black">15 soal campuran ⚡</h2><p class="text-sm opacity-85 mt-1">SRS due + pola kalimat acak. +10 XP per benar. Selesaikan sebelum timer habis!</p><div class="flex gap-2 mt-4"><button data-a="chal-start" class="bg-white text-blue-700 font-extrabold text-xs px-4 py-2.5 rounded-xl">▶ Mulai 5:00</button><button data-a="go" data-t="board" class="border border-white/40 text-xs px-4 py-2.5 rounded-xl">🏆 Leaderboard</button></div></div><div class="card p-4 mt-3 text-xs text-slate-300">Terakhir: ${S.chal.last?`skor ${S.chal.last.score}/${S.chal.last.total} • +${S.chal.last.score*10} XP`:"belum pernah main hari ini."}</div>`;
+  if(!S.chal.active&&S.chal.q.length&&S.chal.i>=S.chal.q.length){const r=S.chal;return `<div class="card p-8 text-center anim"><div class="text-4xl">🏁</div><h2 class="font-black text-white text-lg">Challenge selesai!</h2><p class="text-sky-300 font-black text-2xl mt-1">${r.score}/${r.q.length}</p><p class="text-xs text-slate-400">+${r.score*10} XP masuk progres mingguan</p><div class="flex gap-2 mt-4"><button data-a="chal-start" class="btn-pri flex-1 rounded-xl py-2.5 text-xs">Main lagi</button><button data-a="go" data-t="board" class="btn-ghost flex-1 rounded-xl py-2.5 text-xs">Leaderboard</button></div></div>`;}
+  const cur=S.chal.q[S.chal.i]; if(!cur)return "";
+  let inner="";
+  if(cur.w){inner=`<div class="card p-6 text-center"><div>${ruby(cur.w.jp,cur.w.kana)}</div><div class="mt-1">${kanaLine(cur.w.kana,cur.w.roma)}</div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">${shuffle([cur.w,...shuffle(allWords().filter(x=>x.k!==cur.w.k)).slice(0,3)]).map(o=>`<button data-a="chal-ans" data-ok="${o.k===cur.w.k?1:0}" data-k="${o.k}" class="card card-hover p-3 text-sm text-left">${esc(o.mean)}</button>`).join("")}</div>`;}
+  else{const d=patternDetail(cur.lid,cur.gi);inner=`<div class="card p-4 text-sm"><b class="text-sky-200">${esc(d.title)}</b><p class="text-slate-300 mt-1">${esc(d.desc)}</p><p class="text-xs text-slate-400 mt-2">Contoh benar: ${esc(d.ex[0][0])} — ${esc(d.ex[0][2])}</p></div><div class="grid grid-cols-2 gap-2 mt-2"><button data-a="chal-ans" data-ok="1" class="card card-hover p-3 text-xs">✅ Sudah paham (+XP)</button><button data-a="chal-ans" data-ok="0" class="card card-hover p-3 text-xs">❌ Belum (+review)</button></div>`;}
+  return `<div class="flex justify-between items-center mb-2"><span class="chip">Soal ${S.chal.i+1}/${S.chal.q.length} • skor ${S.chal.score}</span><span class="card px-3 py-1.5 font-black text-sky-300">⏱️ <span id="chal-timer">${fmt(S.chal.sec)}</span></span></div>${inner}`;
+}
+function vSearch(){return `<h2 class="font-bold text-sm mb-2">🔍 Cari kosakata</h2><input id="q" placeholder="kanji / kana / romaji / arti..." class="w-full bg-slate-900 border border-blue-900 rounded-xl p-3 text-sm"><div id="res" class="space-y-1.5 mt-2"><p class="text-xs text-slate-500 text-center py-6">Ketik untuk mencari 800+ kata.</p></div>`;}
+function vBoard(){
+  const arr=Object.entries(LOGS).sort().slice(-7); const total=Object.values(LOGS).reduce((a,b)=>a+(b.xp||0),0);
+  const me=streak();
+  return `<h2 class="font-extrabold text-white">🏆 Leaderboard XP</h2><p class="text-xs text-slate-400 mb-2">Lokal (HP ini) + global Supabase jika login.</p>
+  <div class="grid grid-cols-3 gap-2 mb-3"><div class="card p-3 text-center"><div class="text-[11px] text-slate-400">Total XP</div><div class="font-black text-sky-300 text-xl">${total}</div></div><div class="card p-3 text-center"><div class="text-[11px] text-slate-400">Streak</div><div class="font-black text-xl">🔥 ${me}</div></div><div class="card p-3 text-center"><div class="text-[11px] text-slate-400">Hari aktif</div><div class="font-black text-xl">${Object.keys(LOGS).length}</div></div></div>
+  <div class="card p-4"><h3 class="text-xs font-bold mb-2">📅 Kamu 7 log terakhir</h3>${arr.map(([d,v])=>`<div class="flex justify-between text-xs py-1 border-b border-blue-950 last:border-0"><span class="text-slate-400">${d}</span><b class="text-sky-300">${v.xp} XP • ${v.ok}/${v.tot}</b></div>`).join("")||"<p class='text-xs text-slate-500'>Belum ada log.</p>"}</div>
+  <div class="card p-4 mt-2"><h3 class="text-xs font-bold mb-1">🌐 Global (Supabase)</h3><div id="gboard" class="text-xs text-slate-400">Login Supabase untuk leaderboard global. (Auth + study_logs)</div><button data-a="gboard-load" class="btn-ghost text-xs px-3 py-2 rounded-xl mt-2">Muat global</button></div>`;
+}
+
+// ---------- EVENTS ----------
+let patBuild=[];
+function openSupaModal(){const m=$("#supa-modal");if(!m)return;try{const c=(typeof zipunGetCreds==="function")?zipunGetCreds():{url:"",key:""};$("#in-supa-url").value=localStorage.getItem("zipun_supa_url")||c.url||"";$("#in-supa-key").value=localStorage.getItem("zipun_supa_key")||c.key||"";}catch(e){}const st=supaStatus();$("#supa-status").textContent="Status: "+st.mode+" — "+(st.reason||"")+(st.url?" — "+st.url:"");$("#supa-test-res").textContent="";m.style.display="flex";}
+function bind(){
+  $$("#tabs .tab-btn").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+  $("#logo").onclick=()=>{S.tab="home";S.lesson=null;render();};
+  const fb=$("#furi-btn"); if(fb) fb.onclick=()=>{S.showFuri=!S.showFuri;saveView();render();};
+  const rb=$("#roma-btn"); if(rb) rb.onclick=()=>{S.showRoma=!S.showRoma;saveView();render();};
+  const sb=$("#supa-btn"); if(sb) sb.onclick=openSupaModal;
+  $$("#app [data-a]").forEach(el=>el.onclick=e=>act(el,e));
+  const qi=$("#q"); if(qi)qi.oninput=()=>{const q=qi.value.toLowerCase().trim();const box=$("#res");if(!q){box.innerHTML="";return;}const r=allWords().filter(w=>w.jp.includes(q)||(w.kana||"").includes(q)||(w.roma||"").toLowerCase().includes(q)||(w.mean||"").toLowerCase().includes(q)).slice(0,30);box.innerHTML=r.map(w=>`<div class="card p-2.5 flex justify-between gap-2 text-xs"><div><div>${ruby(w.jp,w.kana)}</div><div class="mt-1">${kanaLine(w.kana,w.roma)}</div><div class="mean-line">🇮🇩 ${esc(w.mean)} (Bab ${w.lid})</div></div><button data-a="speak" data-t="${esc(w.kana||w.jp)}">🔊</button></div>`).join("")||"<p class='text-xs text-slate-500 text-center'>Tidak ketemu.</p>";box.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>act(b));};
+  const ti=$("#type-in"); if(ti){ti.focus();ti.onkeydown=e=>{if(e.key==="Enter"){doTypeCheck();}};}
+  const pi=$("#pat-in"); if(pi){pi.onkeydown=e=>{if(e.key==="Enter")doPatCheck();};}
+}
+function doTypeCheck(){const inp=$("#type-in");if(!inp)return;const w=S.quiz.q[S.quiz.i];const v=inp.value.trim();const ok=(v===w.jp||v===(w.kana||""));S.quiz.ans=ok?"ok":"bad";if(ok){S.quiz.score++;addXP(15,1,1,1);srsReview(w.k,5);}else{srsReview(w.k,1);addXP(1,1,0,1);}render();const sp=$("#type-in");if(sp)sp.focus();}
+function doPatCheck(){const inp=$("#pat-in");const fb=$("#pat-fb");const ans=S.patQuiz.answer.replace(/\s+/g,"");const v=(inp.value||"").replace(/\s+/g,"");if(!v)return;if(v===ans||ans.includes(v)&&v.length>2){fb.innerHTML="✅ <b class='text-emerald-300'>Benar! +10 XP</b>";addXP(10,1,1,1);PAT[S.patLesson+"-"+S.patIdx]=1;save();confetti(20);}else{fb.innerHTML=`❌ Belum tepat. Kunci: <b class="text-sky-200">${esc(S.patQuiz.answer)}</b> — coba dengar & ulangi.`;addXP(1,1,0,1);} }
+function act(el,e){
+  if(e)e.stopPropagation();
+  const a=el.dataset.a;
+  if(a==="go")setTab(el.dataset.t);
+  else if(a==="open"){S.lesson=+el.dataset.id;S.tab="lessons";render();}
+  else if(a==="back"){S.lesson=null;render();}
+  else if(a==="speak"){speak(el.dataset.t);if(S.tab==="quiz"&&S.quiz.mode==="listen"){/* jangan bocorkan */}}
+  else if(a==="mem"){const l=+el.dataset.l,i=+el.dataset.i,k=key(l,i);if(SRS[k]?.mem){delete SRS[k].mem;if(SRS[k].reps<2)delete SRS[k];}else{srsGet(k).mem=true;srsReview(k,5);}addXP(2,0,1,1);save();render();}
+  else if(a==="flip"){S.flip=!S.flip;render();}
+  else if(a==="fc-next"){S.fcIdx=(S.fcIdx+1)%S.fcList.length;S.flip=false;render();}
+  else if(a==="fc-prev"){S.fcIdx=(S.fcIdx-1+S.fcList.length)%S.fcList.length;S.flip=false;render();}
+  else if(a==="grade"){const w=S.fcList[S.fcIdx%S.fcList.length];const q=+el.dataset.q;srsReview(w.k,q);if(q>=3){addXP(5,1,1,1);toast("✅ +5 XP • interval bertambah");}else{addXP(1,1,0,1);toast("🔁 Masuk antrian besok (SM-2)");}S.fcIdx++;if(S.fcIdx>=S.fcList.length){confetti(30);resetSRSQueue();toast("🎉 Sesi SRS selesai!");}S.flip=false;render();}
+  else if(a==="srs-bab"){const id=+el.dataset.id;S.fcList=shuffle(LESSONS.find(l=>l.id===id).vocab.map((v,i)=>({lid:id,title:"",idx:i,jp:v[0],kana:v[1],roma:v[2],mean:v[3],k:key(id,i)})));S.fcIdx=0;S.flip=false;setTab("flashcard");}
+  else if(a==="quiz-bab"){const id=+el.dataset.id;quizInit("pg-jp");S.quiz.q=shuffle(LESSONS.find(l=>l.id===id).vocab.map((v,i)=>({lid:id,idx:i,jp:v[0],kana:v[1],roma:v[2],mean:v[3],k:key(id,i)}))).slice(0,15);S.quiz.i=0;S.quiz.score=0;newQuizOpts();setTab("quiz");}
+  else if(a==="q-mode"){quizInit(el.dataset.m);render();}
+  else if(a==="q-restart"){quizInit();render();}
+  else if(a==="q-ans"){if(S.quiz.ans)return;const w=S.quiz.q[S.quiz.i];const ok=el.dataset.k===w.k;S.quiz.ans=el.dataset.k;if(ok){S.quiz.score++;addXP(10,1,1,1);srsReview(w.k,4);}else{srsReview(w.k,2);addXP(1,1,0,1);}render();}
+  else if(a==="q-type")doTypeCheck();
+  else if(a==="q-next"){S.quiz.i++;if(S.quiz.i<S.quiz.q.length)newQuizOpts();else{confetti(30);}render();}
+  else if(a==="pat-bab"){S.patLesson=+el.dataset.id;S.patModeDetail="list";S.tab="pattern";render();}
+  else if(a==="pat-back"||a==="pat-list"){S.patModeDetail="list";render();}
+  else if(a==="pat-open"){S.patLesson=+el.dataset.l;S.patIdx=+el.dataset.g;S.patModeDetail="detail";S.patQuiz=null;patBuild=[];S.tab="pattern";render();}
+  else if(a==="pat-new"){S.patQuiz=patternQuiz(S.patLesson,S.patIdx);patBuild=[];render();}
+  else if(a==="pat-tok"){patBuild.push(el.dataset.t);const b=$("#pat-build");if(b)b.textContent=patBuild.join(" ");speak(el.dataset.t,1);}
+  else if(a==="pat-check-susun"){const fb=$("#pat-fb");const ans=S.patQuiz.answer;const got=patBuild.join(" ");if(got===ans){fb.innerHTML="✅ <b class='text-emerald-300'>Benar! +10 XP</b>";addXP(10,1,1,1);PAT[S.patLesson+"-"+S.patIdx]=1;save();confetti(20);}else fb.innerHTML=`❌ Belum tepat. Kunci: <b>${esc(ans)}</b> <button data-a="speak" data-t="${esc(ans)}" class="underline text-sky-300">dengar</button>`;if(fb)fb.querySelectorAll("[data-a]").forEach(b=>b.onclick=ev=>act(b,ev));}
+  else if(a==="pat-check")doPatCheck();
+  else if(a==="chal-start"){chalStart();}
+  else if(a==="chal-ans"){const ok=el.dataset.ok==="1";const cur=S.chal.q[S.chal.i];if(ok)S.chal.score++;if(cur.w)srsReview(cur.w.k,ok?4:2);addXP(ok?10:1,0,ok?1:0,1);S.chal.i++;if(S.chal.i>=S.chal.q.length){S.chal.last={score:S.chal.score,total:S.chal.q.length};chalFinish();}else render();}
+  else if(a==="gboard-load"){loadGlobal();}
+}
+async function loadGlobal(){const box=$("#gboard");const sc=getSupa();if(!sc){if(box)box.textContent="Offline — "+(supaStatus().reason||"")+" — buka 🔌 DB untuk atur.";return;}if(box)box.textContent="Memuat...";try{const {data,error}=await sc.from("study_logs").select("user_id,xp,created_at").gte("created_at",weekStart().toISOString()).limit(200);if(error)throw error;const m={};data.forEach(r=>m[r.user_id]=(m[r.user_id]||0)+r.xp);const arr=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,10);if(box)box.innerHTML=arr.map(([u,x],i)=>`<div class="flex justify-between py-0.5"><span>${i+1}. ${esc(u.slice(0,8))}…</span><b class="text-sky-300">${x} XP</b></div>`).join("")||"Belum ada data minggu ini.";}catch(e){if(box)box.textContent="Gagal: "+e.message;}}
+// Supabase: coba fetch vocab/pola (opsional, fallback tetap jalan)
+async function trySupabase(){
+  const sc=getSupa();
+  if(!sc){render();return;}
+  try{
+    const {data:ls,error:e1}=await sc.from("lessons").select("*").order("id");
+    if(e1) throw e1;
+    const {data:vc,error:e2}=await sc.from("vocab").select("*").order("lesson_id").limit(2000);
+    if(e2) throw e2;
+    if(ls&&ls.length&&vc&&vc.length){
+      LESSONS=ls.map(l=>({id:l.id,title:l.title,vocab:vc.filter(v=>v.lesson_id===l.id).map(v=>[v.jp,v.kana,v.romaji,v.mean]),grammar:(FALLBACK.find(f=>f.id===l.id)?.grammar||[])}));
+      DATA_SRC="Supabase";
+      console.log("[Zipun] Loaded from Supabase:",ls.length,"lessons,",vc.length,"vocab");
+    } else {
+      DATA_SRC="lokal (Supabase tabel kosong — isi vocab dulu)";
+      console.log("[Zipun] Supabase connected tapi vocab kosong, pakai lokal");
+    }
+  }catch(e){console.warn("[Zipun] Supabase fetch gagal, pakai lokal:",e.message||e);DATA_SRC="lokal (fetch gagal: "+(e.message||"err")+")";}
+  render();
+}
+async function testSupa(){
+  const res=$("#supa-test-res"); const url=$("#in-supa-url").value.trim(); const key=$("#in-supa-key").value.trim();
+  if(!url||!key){if(res)res.textContent="Isi URL + Key dulu.";return;}
+  if(!window.supabase){if(res)res.textContent="CDN supabase-js belum termuat (cek internet).";return;}
+  if(res)res.textContent="Mengetes...";
+  try{
+    const c=window.supabase.createClient(url,key);
+    const {error}=await c.from("lessons").select("id").limit(1);
+    if(error) throw error;
+    if(res)res.innerHTML="✅ <b class='text-emerald-300'>Koneksi OK, tabel lessons bisa dibaca.</b> Klik Simpan & Reload.";
+  }catch(e){if(res)res.textContent="❌ Gagal: "+(e.message||e);}
+}
+$("#goal-btn").onclick=()=>{ $("#in-xp").value=GOAL.xp;$("#in-words").value=GOAL.words;$("#in-days").value=GOAL.days;$("#modal").style.display="flex";};
+$("#modal-close").onclick=()=>$("#modal").style.display="none";
+$("#modal-save").onclick=()=>{GOAL={xp:+$("#in-xp").value||300,words:+$("#in-words").value||100,days:+$("#in-days").value||5};save();$("#modal").style.display="none";render();toast("🎯 Target disimpan");};
+$("#supa-close").onclick=()=>$("#supa-modal").style.display="none";
+$("#supa-clear").onclick=()=>{if(typeof zipunClearCreds==="function")zipunClearCreds();};
+$("#supa-test").onclick=testSupa;
+$("#supa-save").onclick=()=>{const u=$("#in-supa-url").value.trim(),k=$("#in-supa-key").value.trim();if(!u||!k){$("#supa-test-res").textContent="Isi URL + Key dulu.";return;}if(typeof zipunSaveCreds==="function")zipunSaveCreds(u,k);};
+quizInit("pg-jp"); resetSRSQueue(); render(); trySupabase();
+})();
+</script>
+</body>
+</html>
