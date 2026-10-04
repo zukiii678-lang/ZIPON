@@ -7,6 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./mnn-data.js"></script>
+<script src="./mnn-examples.js"></script>
 <script src="./supabase-config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -158,6 +159,114 @@ function newQuizOpts(){const cur=S.quiz.q[S.quiz.i];if(!cur)return;const all=all
 
 // ---- Pola Kalimat enrichment ----
 function stripTags(s){return String(s).replace(/<[^>]+>/g,"");}
+function stripTags(s){return String(s).replace(/<[^>]+>/g,"");}
+// Legenda simbol pola (V/N/KS/KB) agar judul seperti V-ないで mudah dimengerti
+const PAT_LEGEND=[
+ ["V","kata kerja (mis. 食べます・たべます = makan)"],
+ ["V-stem","kata kerja tanpa ます (mis. 食べ → tabé)"],
+ ["N","kata benda (mis. 本・ほん = buku)"],
+ ["KS-i","kata sifat-i (mis. 高い・たかい = mahal/tinggi)"],
+ ["KS-na","kata sifat-na (mis. 静か・しずか = tenang)"],
+ ["KB","kata benda/kalimat benda (pelengkap です)"],
+ ["S","kalimat lengkap"]
+];
+// Info pola per "lid-gi": judul Indonesia + rumus + pemakaian + kesalahan umum + beda pola
+// Menutupi 91 pola (25 bab). Field kosong = box disembunyikan.
+const PAT_INFO={
+"1-0":{j:"Pernyataan: A adalah B",r:"N1 は N2 です",p:"Memperkenalkan atau menyatakan identitas dan status. Partikel は menandai topik pembicaraan.",s:"Jangan pakai 先生 untuk diri sendiri (pakai 教師). Jangan tertukar は (topik) dengan が (pelaku/fokus).",b:"Beda dengan じゃありません (negatif) dan ですか (tanya)."},
+"1-1":{j:"Negatif: A bukan B",r:"N1 は N2 じゃありません",p:"Menyangkal identitas atau status dengan sopan.",s:"Bentuk kasualnya じゃない, tapi untuk ujian dan atasan pakai じゃありません.",b:"Pasangan dari は〜です (positif)."},
+"1-2":{j:"Tanya: apakah A adalah B?",r:"N1 は N2 ですか",p:"Bertanya identitas. Jawab dengan はい/いいえ + です/じゃありません.",s:"Jangan jawab cukup はい saja untuk identitas orang; ulangi predikatnya.",b:"Pasangan tanya dari は〜です."},
+"1-3":{j:"Juga (pengganti は)",r:"N も 〜です",p:"Menyatakan hal yang sama berlaku untuk N. Kata も menggantikan posisi は.",s:"も dan は tidak dipakai bersamaan (×はも).",b:"Beda dengan の (milik)."},
+"1-4":{j:"Milik atau berkaitan: B milik/terkait A",r:"N1 の N2",p:"Menyatakan milik, asal, atau hubungan (私の本, 日本の車).",s:"Urutan terbalik dari Indonesia: pemilik dulu, baru bendanya.",b:"Beda dengan は (topik)."},
+"2-0":{j:"Menunjuk benda: ini/itu adalah N",r:"これ・それ・あれ は N です",p:"これ = dekat saya, それ = dekat lawan bicara, あれ = jauh dari keduanya.",s:"Jangan pakai これ untuk orang (pakai こちら/この方).",b:"Beda dengan この〜 (harus diikuti benda)."},
+"2-1":{j:"Menerangkan benda spesifik",r:"この・その・あの + N は〜です",p:"この本 = buku ini (fisik dekat). Selalu diikuti kata benda.",s:"この tanpa benda adalah salah (×このは本です).",b:"Beda dengan これ (berdiri sendiri)."},
+"2-2":{j:"Ya begitu / bukan begitu",r:"そうです / そうじゃありません",p:"Menyetujui atau menolak pernyataan lawan bicara.",s:"そうです untuk setuju isi, bukan untuk menjawab ya/tidak semua pertanyaan.",b:"Beda dengan はい/いいえ yang menjawab pertanyaan ya/tidak."},
+"2-3":{j:"Pilihan: yang ini atau yang itu?",r:"〜か、〜か",p:"Menawarkan atau bertanya pilihan di antara dua hal.",s:"か di tengah pilihan tidak perlu ですか.",b:"Beda dengan ですか tunggal."},
+"2-4":{j:"Buatan, asal, atau milik",r:"N1 の N2",p:"Contoh: 日本の車 (mobil Jepang), 私のかばん (tasku).",s:"Sama rumusnya dengan Bab 1, konteksnya benda.",b:"Beda dengan は (topik)."},
+"3-0":{j:"Di sini/situ/sana adalah N",r:"ここ・そこ・あそこ は N です",p:"Menyebut fungsi tempat (ここは教室です = di sini ruang kelas).",s:"ここ/そこ/あそこ untuk tempat, こちら versi sopannya.",b:"Beda dengan NはTempatです (subjeknya bendanya)."},
+"3-1":{j:"N ada di tempat X",r:"N は Tempat です",p:"Menyebut lokasi benda atau orang.",s:"Untuk orang hidup pakai います di pola Bab 10, bukan です.",b:"Kebalikan sudut pandang dari ここはNです."},
+"3-2":{j:"Bertanya lokasi atau asal institusi",r:"どこ・どちら ですか",p:"どこ untuk tempat fisik, どちら lebih sopan atau untuk institusi (会社はどちらですか).",s:"Jangan jawab lokasi orang dengan です saja untuk benda hidup (lihat Bab 10).",b:"Beda dengan 何 (apa)."},
+"3-3":{j:"Tempat produksi atau asal",r:"N1 の N2 (mis. イタリアの靴)",p:"Menyatakan asal pembuatan atau kepemilikan terkait tempat.",s:"Urutan: asal dulu, benda kemudian.",b:"Sama rumus の, konteks tempat."},
+"4-0":{j:"Jam berapa sekarang",r:"今 〜時 〜分 です",p:"Menyebut jam: 時 (jam), 分 (menit), 半 (setengah).",s:"半 hanya untuk :30. Pagi/siang pakai 午前/午後 agar jelas.",b:"Beda dengan durasi (〜時間, Bab 11)."},
+"4-1":{j:"Konjugasi dasar: sekarang, negatif, lampau",r:"Vます・Vません・Vました・Vませんでした",p:"Empat bentuk dasar percakapan sopan. Hafalkan polanya per kata kerja.",s:"ました untuk lampau positif, ませんでした untuk lampau negatif — jangan dicampur.",b:"Beda dengan bentuk kamus/biasa (Bab 18/20)."},
+"4-2":{j:"Melakukan aksi pada waktu spesifik",r:"Waktu に Vます",p:"に dipakai untuk jam dan hari yang spesifik (7時に, 月曜日に).",s:"Jangan pakai に untuk 毎日・昨日・今日 (×毎日に).",b:"Beda dengan で (tempat/alat)."},
+"4-3":{j:"Dari X sampai Y",r:"N1 から N2 まで",p:"Rentang waktu atau titik (9時から5時まで).",s:"から = titik mulai, まで = titik akhir; jangan tertukar.",b:"Beda dengan 〜ごろ (kira-kira)."},
+"5-0":{j:"Pergi, datang, pulang ke tujuan",r:"Tempat へ 行きます・来ます・帰ります",p:"へ dibaca え. 行きます = pergi (dari saya), 来ます = datang (ke saya), 帰ります = pulang.",s:"Jangan pakai に untuk arah tujuan gerakan ini di level N5 (pakai へ).",b:"Beda dengan で (alat) dan と (bersama)."},
+"5-1":{j:"Tidak pergi ke mana-mana",r:"どこ[へ]も 〜ません",p:"Menyatakan penolakan total tujuan dengan も + negatif.",s:"Kalimat harus negatif (×どこへも行きます).",b:"Beda dengan どこか (suatu tempat, positif)."},
+"5-2":{j:"Naik apa ke sana",r:"Alat で 行きます",p:"で untuk alat transportasi (電車で, バスで). Jalan kaki: 歩いて.",s:"Jangan pakai を untuk alat.",b:"Beda dengan へ (tujuan)."},
+"5-3":{j:"Pergi bersama siapa",r:"Orang と 行きます",p:"と untuk teman perjalanan.",s:"Beda dengan や (dan, tidak lengkap) dan と untuk kutipan.",b:"Beda dengan で (alat)."},
+"6-0":{j:"Objek aksi: melakukan N",r:"N を Vます",p:"を menandai objek langsung kata kerja transitif (ご飯を食べます).",s:"を dibaca お. Jangan pakai が untuk objek.",b:"Beda dengan で (tempat aksi)."},
+"6-1":{j:"Sedang melakukan apa?",r:"何を しますか",p:"Bertanya aktivitas. 何 dibaca なに sebelum を/が.",s:"何 + を = なにを, jangan なんを.",b:"Beda dengan 何が好き ( Bab 9, pakai が)."},
+"6-2":{j:"Di mana melakukan aksi",r:"Tempat で Vます",p:"で untuk tempat aksi (図書館で勉強します).",s:"Jangan tertukar dengan に (titik waktu/keberadaan).",b:"Beda dengan へ (arah)."},
+"6-3":{j:"Ajakan halus: maukah bersama?",r:"Vませんか",p:"Mengajak dengan sopan dan memberi ruang menolak.",s:"Ini ajakan, bukan pertanyaan negatif biasa.",b:"Beda dengan Vましょう (ajakan tegas, ayo)."},
+"6-4":{j:"Ajakan tegas: mari lakukan",r:"Vましょう",p:"Mengusulkan aksi bersama dengan yakin.",s:"Jangan dipakai ke atasan untuk perintah.",b:"Beda dengan Vませんか (lebih halus)."},
+"7-0":{j:"Dengan alat atau dalam bahasa apa",r:"Alat/Bahasa で Vます",p:"Contoh: はしで食べます, 日本語で話します.",s:"で untuk alat/bahasa, bukan を.",b:"Beda dengan に (tujuan/penerima)."},
+"7-1":{j:"Bertanya kata dalam bahasa lain",r:"Word は 〜語で 何ですか",p:"Menanyakan padanan kata (りんごはインドネシア語で何ですか).",s:"何 di sini dibaca なん (sebelum です).",b:"Beda dengan 何をしますか."},
+"7-2":{j:"Memberi ke seseorang",r:"Orang に N を あげます",p:"あげます = saya/seseorang memberi ke orang lain.",s:"Jangan pakai あげます untuk memberi ke saya (pakai くれます, Bab 24).",b:"Beda dengan もらいます (menerima)."},
+"7-3":{j:"Menerima dari seseorang",r:"Orang に N を もらいます",p:"もらいます = saya menerima dari orang lain.",s:"Partikelnya に (sumber), bukan から di pola N5 ini.",b:"Beda dengan あげます (memberi)."},
+"8-0":{j:"Kata sifat-na: tenang, terkenal, dst.",r:"KS-na です・じゃありません",p:"Sifat-na butuh な hanya saat sebelum benda (静かな町), tidak untuk predikat.",s:"Jangan tambah な di akhir kalimat (×静かなです).",b:"Beda dengan KS-i yang berkonjugasi い."},
+"8-1":{j:"Kata sifat-i: tinggi, murah, dst.",r:"KS-i です・くないです (kecuali いい→よくない)",p:"Sifat-i langsung menempel: 高い山. Negatif: い→くない.",s:"いい spesial: negatifnya よくない, bukan いくない.",b:"Beda dengan KS-na."},
+"8-2":{j:"Sifat + benda",r:"KS-na + な + N / KS-i + N",p:"Contoh: 静かな町, 高い山.",s:"な hanya untuk KS-na; KS-i tidak pakai な.",b:"Inti Bab 8."},
+"8-3":{j:"Sangat / tidak terlalu",r:"とても (+) / あまり (−)",p:"とても untuk kalimat positif, あまり selalu dengan negatif.",s:"Jangan pakai あまり dengan positif (×あまりいいです).",b:"Beda pasangan penggunaannya."},
+"9-0":{j:"Suka, benci, mahir, payah",r:"N が 好き・嫌い・上手・下手 です",p:"Perasaan dan kemampuan memakai が, bukan を.",s:"×日本語を好きです → ○日本語が好きです.",b:"Beda dengan を untuk objek aksi."},
+"9-1":{j:"Mengerti dan memiliki",r:"N が 分かります・あります",p:"分かります (mengerti) dan あります (punya) juga memakai が.",s:"Sama jebakan を seperti di atas.",b:"Beda dengan います (makhluk hidup, Bab 10)."},
+"9-2":{j:"Alasan: karena ~, maka ~",r:"〜から、〜",p:"Alasan di depan, kesimpulan di belakang.",s:"から di tengah kalimat (bukan di awal seperti because).",b:"Beda dengan ので (lebih halus, level lanjut)."},
+"10-0":{j:"Di tempat X ada benda/orang",r:"Tempat に N が あります・います",p:"あります = benda mati, います = makhluk hidup.",s:"Jangan tertukar: ×公園に犬があります.",b:"Beda sudut pandang dengan NはTempatに."},
+"10-1":{j:"Benda/orang itu ada di mana",r:"N は Tempat に あります・います",p:"Topiknya bendanya, lokasinya di belakang.",s:"Partikel lokasi keberadaan adalah に.",b:"Kebalikan dari pola 10-0."},
+"10-2":{j:"Posisi: atas, bawah, depan, dll.",r:"N1 (posisi) の N2",p:"Contoh: 机の上 (di atas meja), 本屋の隣.",s:"Urutan: acuan + posisi + の + benda.",b:"Perlu hafal kosakata posisi Bab 10."},
+"11-0":{j:"Bilangan ditaruh sebelum kerja",r:"Bilangan + Kata Kerja",p:"Jumlah benda/orang diletakkan tepat sebelum predikat.",s:"Jangan taruh bilangan di awal kalimat.",b:"Beda dengan durasi/frekuensi."},
+"11-1":{j:"Frekuensi dalam periode",r:"Periode に 〜回 V",p:"Contoh: 1週間に2回会います.",s:"に untuk periode, 回 untuk hitungan kali.",b:"Beda dengan だけ (hanya)."},
+"11-2":{j:"Hanya ~",r:"Bilangan/Benda + だけ",p:"Membatasi jumlah (2つだけ = hanya 2).",s:"だけ menempel setelah yang dibatasi.",b:"Beda dengan も (juga)."},
+"12-0":{j:"Lampau KB dan KS-na",r:"〜でした・じゃありませんでした",p:"Kemarin/sudah lewat untuk benda dan sifat-na.",s:"でした untuk positif lampau, bukan かった.",b:"Beda dengan KS-i (かった)."},
+"12-1":{j:"Lampau KS-i",r:"〜かったです・くなかったです",p:"Contoh: 高かったです, 高くなかったです.",s:"いい spesial: よかったです.",b:"Beda dengan KB/KS-na."},
+"12-2":{j:"A lebih ~ daripada B",r:"N1 は N2 より KS です",p:"Perbandingan dua hal.",s:"より menempel pada pembanding (yang kalah).",b:"Beda denganichiban (paling)."},
+"12-3":{j:"Mana yang lebih ~?",r:"N1 と N2 と どちらが KS ですか",p:"Bertanya perbandingan dua pilihan.",s:"どちら untuk 2 pilihan, どれ untuk 3+.",b:"Pasangan tanya dari より."},
+"12-4":{j:"Yang paling ~",r:"[範囲]で N が いちばん KS です",p:"Contoh: 日本で富士山がいちばん高いです.",s:"で untuk ruang lingkup, が untuk yang paling.",b:"Beda dengan より."},
+"13-0":{j:"Ingin punya benda",r:"N が 欲しいです",p:"Keinginan memiliki benda (bukan aksi).",s:"欲しい adalah sifat-i (欲しくない), subjeknya が.",b:"Beda dengan 〜たい (ingin melakukan aksi)."},
+"13-1":{j:"Ingin melakukan aksi",r:"V-stem + たいです",p:"Contoh: 食べたいです. Stem = tanpa ます.",s:"たい berkonjugasi seperti sifat-i (たかったです).",b:"Beda dengan 欲しい (benda)."},
+"13-2":{j:"Pergi untuk tujuan",r:"Tempat へ V-stem/N に 行く・来る・帰る",p:"Contoh: プールへ泳ぎに行きます.",s:"Pakai stem (泳ぎ), bukan ます.",b:"Beda dengan へ biasa (tanpa tujuan aksi)."},
+"13-3":{j:"Suatu tempat / sesuatu",r:"どこか・何か",p:"Indefinit positif (mau ke mana saja/apa saja).",s:"Jangan campur dengan どこも (negatif total).",b:"Pasangan positif dari どこも〜ません."},
+"14-0":{j:"Kelompok kata kerja (dasar)",r:"Grup I・II・III",p:"Dasar untuk membentuk te/tai/nai/ta. Grup II mayoritas 〜える/〜いる, grup III hanya する・来る.",s:"帰る・入る・切る terlihat seperti grup II tapi grup I.",b:"Wajib paham sebelum menghafal te."},
+"14-1":{j:"Perubahan bentuk-te",r:"tte・nde・ite・ide・shite",p:"Kunci: い・ち・り→って, み・び・に→んで, き→いて, ぎ→いで, し→して.",s:"行く spesial: 行って (bukan 行いて).",b:"Pola ini alat, bukan arti sendiri."},
+"14-2":{j:"Tolong lakukan ~",r:"V-て ください",p:"Permintaan santun (tolong). Contoh: 見せてください.",s:"Ini permintaan, bukan perintah kasar.",b:"Beda dengan ています (sedang)."},
+"14-3":{j:"Sedang melakukan ~",r:"V-て います",p:"Aksi berlangsung (食べています = sedang makan).",s:"Jangan tertukar dengan permintaan ください.",b:"Beda dengan keadaan hasil (結婚しています, Bab 15)."},
+"14-4":{j:"Tawaran bantuan",r:"V-stem + ましょうか",p:"Menawarkan diri: しましょうか (saya simpan ya?).",s:"Subjeknya saya, bukan lawan bicara.",b:"Beda dengan ましょう (ayo bersama)."},
+"15-0":{j:"Minta izin: bolehkah saya ~?",r:"V-て も いいですか",p:"Izin sopan sebelum bertindak.",s:"Jawabannya ええ、いいですよ / すみません、ちょっと….",b:"Beda dengan larangan はいけません."},
+"15-1":{j:"Larangan: tidak boleh ~",r:"V-て は いけません",p:"Aturan keras (dilarang).",s:"は di sini penegas larangan, jangan dihilang.",b:"Beda dengan ないでください (mohon jangan, lebih lembut)."},
+"15-2":{j:"Keadaan yang berlanjut",r:"V-て います (hasil)",p:"Contoh: 知っています (sudah tahu), 結婚しています (sudah menikah).",s:"Beda makna dengan sedang berlangsung Bab 14; lihat konteks katanya.",b:"Bab 14 = aksi berjalan, Bab 15 = status hasil."},
+"16-0":{j:"Rangkaian aksi berurutan",r:"V1-て、V2-て、V3ます",p:"Cerita urutan:起きて、食べて、出かけます.",s:"Semua kecuali terakhir pakai て.",b:"Beda dengan てから (penegas setelah)."},
+"16-1":{j:"Setelah X, lalu Y",r:"V1-て から、V2",p:"Menegaskan urutan selesai-dulu.",s:"から di sini = setelah, bukan dari.",b:"Beda dengan rangkaian biasa 16-0."},
+"16-2":{j:"A, bagian B-nya bersifat C",r:"N1 は N2 が KS です",p:"Contoh: マリアさんは髪が長いです.",s:"Topik N1, sifat menempel pada bagian N2 (pakai が).",b:"Beda dengan Nが好き (perasaan)."},
+"17-0":{j:"Bentuk-nai (negatif kasual)",r:"V-ない形",p:"Dasar larangan dan kewajiban. U baba: う→わ +ない, く→か +ない, す→さ +ない, dsb.",s:"する→しない, 来る→こない (spesial).",b:"Alat untuk 3 pola di bawah."},
+"17-1":{j:"Mohon jangan ~",r:"V-ないで ください",p:"Larangan lembut berupa permohonan. Contoh: 心配しないでください.",s:"Beda dengan てはいけません (aturan). Ini permohonan, bukan aturan.",b:"Pasangan lembut dari 15-1."},
+"17-2":{j:"Harus ~ (wajib)",r:"V-なければ なりません",p:"Kewajiban. Contoh: 行かなければなりません.",s:"Panjang tapi polanya tetap: nai-ba + narimasen.",b:"Beda dengan なくてもいい (tidak perlu)."},
+"17-3":{j:"Tidak perlu / boleh tidak ~",r:"V-なくても いいです",p:"Meniadakan kewajiban.",s:"Jangan tertukar dengan てもいい (boleh, Bab 15).",b:"Pasangan lawan dari なければ."},
+"18-0":{j:"Bentuk kamus (dasar)",r:"辞書形 (u・る・す・つ・む dsb.)",p:"Bentuk netral untuk kemampuan, hobi, sebelum, pengalaman.",s:"Grup II: stem+る, grup I: kembali ke u-row, する→する, 来る→くる.",b:"Alat untuk 3 pola di bawah."},
+"18-1":{j:"Bisa / mampu ~",r:"N / V-kamus + こと が できます",p:"Contoh: 泳ぐことができます.",s:"こと mengubah aksi jadi benda (nominalisasi).",b:"Beda dengan たい (ingin)."},
+"18-2":{j:"Hobi saya adalah ~",r:"私の趣味は N / V-kamus + こと です",p:"Perkenalan hobi.",s:"Jangan lupa こと setelah kamus.",b:"Beda dengan ことができます (kemampuan)."},
+"18-3":{j:"Sebelum ~",r:"V-kamus / Nの / Waktu + 前に",p:"Contoh: 寝る前に歯を磨きます.",s:"前に untuk sebelum; あとで untuk sesudah.",b:"Beda dengan てから (setelah)."},
+"19-0":{j:"Bentuk-ta (lampau kasual)",r:"た形 (≈ bentuk-te, te→ta)",p:"Dasar pengalaman dan tari-tari. Aturannya sama dengan te (って→った, んで→んだ, して→した).",s:"行った (bukan 行いた).",b:"Alat untuk 3 pola di bawah."},
+"19-1":{j:"Pernah ~",r:"V-た + ことがあります",p:"Pengalaman hidup (富士山に登ったことがあります).",s:"ことがあります selalu dengan ta, bukan kamus.",b:"Beda dengan ことができます (kemampuan)."},
+"19-2":{j:"Kegiatan selang-seling / contoh",r:"V1-たり、V2-たり します",p:"Contoh: 休みは寝たり、テレビを見たりします.",s:"Minimal dua tari; diakhiri します.",b:"Beda dengan te-berurutan (urutan pasti)."},
+"19-3":{j:"Menjadi ~ (perubahan)",r:"KS-i→〜く / KS-na→〜に / N→に + なります",p:"Contoh: 暖かくなります, 静かになります.",s:"Partikelnya に, bukan くuntuk na/N.",b:"Beda dengan です (keadaan tetap)."},
+"20-0":{j:"Bentuk sopan (untuk umum)",r:"丁寧体: です・ます",p:"Default ke orang baru, atasan, pelanggan.",s:"Aman dipakai di mana saja.",b:"Beda dengan biasa (teman/keluarga)."},
+"20-1":{j:"Bentuk biasa (kasual)",r:"普通体: kamus・ない・た, KS-i, KS-na(+だ)",p:"Untuk teman akrab dan keluarga.",s:"Jangan pakai ke atasan. Tanya biasa tanpa か + ↗.",b:"Pasangan kasual dari sopan."},
+"20-2":{j:"Aturan ubah ke biasa",r:"V-kamus/ない/た, KS-i, KS-na",p:"Inti konjugasi kasual sekaligus.",s:"KS-na +だ di pernyataan, tanpa だ di tanya.",b:"Jembatan ke Bab 21 (とय)."},
+"21-0":{j:"Saya kira / pikir ~",r:"[Kalimat biasa] と 思います",p:"Pendapat. Klausa depan harus bentuk biasa (行くと思います).",s:"Jangan pakai です・ます sebelum と.",b:"Beda dengan と言いました (kutipan orang lain)."},
+"21-1":{j:"Berkata bahwa ~ (kutipan)",r:"[Kalimat/Kata] と 言いました",p:"Melaporkan ucapan.",s:"Sama: klausa biasa sebelum と.",b:"Beda dengan と思います (pendapat sendiri)."},
+"21-2":{j:"Bukankah ~? (konfirmasi)",r:"V/KS/KB biasa + でしょう",p:"Minta persetujuan (寒いでしょう?).",s:"Nada naik; jawabannya setuju/tidak.",b:"Beda dengan ですか (tanya netral)."},
+"22-0":{j:"Anak kalimat penjelas benda",r:"[Klausa] + N",p:"Pola inti: klausa menerangkan benda (昨日買った本).",s:"Tidak perlu の antara klausa dan benda.",b:"Beda dengan の biasa (benda + benda)."},
+"22-1":{j:"Contoh: buku yang dibeli kemarin",r:"[昨日買いました] + 本",p:"Versi lampau sopan juga bisa menerangkan.",s:"ます/ました boleh di dalam anak kalimat.",b:"Contoh konkret 22-0."},
+"22-2":{j:"Contoh: orang berkacamata",r:"[眼鏡をかけている] + 人",p:"te-iru menerangkan ciri tetap.",s:"Orang + ciri = pola super sering.",b:"Contoh konkret 22-0."},
+"23-0":{j:"Ketika / pada saat ~",r:"[V-kamus/nai/KS/KB] + とき",p:"Latar waktu aksi.",s:"Toki menempel bentuk biasa/kamus, bukan ます.",b:"Beda dengan と bersyarat (otomatis)."},
+"23-1":{j:"Begitu X, pasti Y (otomatis)",r:"V-kamus + と、〜",p:"Sebab-akibat mesin/alami (押すと、音がします).",s:"Akibatnya di luar kendali; bukan ajakan/perintah.",b:"Beda dengan たら (syarat umum)."},
+"23-2":{j:"Melewati jalan",r:"N(jalan) を + lewat/menyeberang/belok",p:"を untuk rute yang dilalui (橋を渡ります).",s:"を di sini bukan objek.",b:"Beda dengan を objek biasa."},
+"24-0":{j:"Berbuat baik untuk orang",r:"V-て あげます",p:"Saya berbuat baik ke orang lain.",s:"Jangan pakai untuk atasan (pakai てさしあげます, di luar N5).",b:"Trio: ageru (saya→orang), morau, kureru."},
+"24-1":{j:"Menerima bantuan orang",r:"V-て もらいます",p:"Saya menerima kebaikan.",s:"Sudut pandang saya sebagai penerima.",b:"Beda dengan あげます (saya pemberi)."},
+"24-2":{j:"Seseorang berbaik ke saya",r:"V-て くれます",p:"Orang lain berbuat baik ke saya/keluarga.",s:"Jangan pakai あげます untuk ke saya.",b:"Penutup trio 24."},
+"25-0":{j:"Kalau/jika ~ (umum)",r:"[Bentuk lampau] + ら、〜",p:"Syarat umum (雨が降ったら、出かけません).",s:"Bentuknya lampau +ら walau artinya depan.",b:"Beda dengan と (otomatis) dan ても (meski)."},
+"25-1":{j:"Meskipun / walaupun ~",r:"V-て も・KS-iくても・KS-na/KBでも",p:"Konsesi (雨が降っても、出かけます).",s:"も = bahkan jika.",b:"Lawan dari たら."}
+};
 function patternDetail(lid,gi){
   const L=LESSONS.find(l=>l.id===lid); const raw=L.grammar[gi]||"";
   const title=(raw.match(/<b>(.*?)<\/b>/)||[,"Pola"])[1];
@@ -170,7 +279,14 @@ function patternDetail(lid,gi){
     14:{ex:[["ドアを 開けてください","ドアを あけてください","Tolong buka pintunya"],["今 ご飯を 食べています","いま ごはんを たべています","Sekarang sedang makan"]],tips:"て-ください = permintaan, て-います = sedang berlangsung."},
   };
   const b=bank[lid]||{ex:[["例文を 音読しましょう","れいぶんを おんどくしましょう","Mari baca contoh dengan suara"],["毎日 5分 練習します","まいにち 5ふん れんしゅうします","Latihan 5 menit tiap hari"]],tips:"Hafalkan 1 pola + 2 contoh per hari, lalu buat 1 kalimat sendiri."};
-  return{title,desc,ex:b.ex,tips:b.tips,raw};
+  const info=(typeof PAT_INFO!=="undefined"&&PAT_INFO[lid+"-"+gi])||null;
+  const judul=info?info.j:title;
+  const rumus=info?info.r:"";
+  const pakai=info?info.p:"";
+  const salah=info?info.s:"";
+  const beda=info?info.b:"";
+  let titleKana=""; try{ titleKana=(typeof patTitleKana==="function")?patTitleKana(title):title; }catch(e){ titleKana=title; }
+  return{title,desc,ex:b.ex,tips:b.tips,raw,judul,rumus,pakai,salah,beda,titleKana};
 }
 function patternQuiz(lid,gi){
   const d=patternDetail(lid,gi); const type=["susun","isian","ubah"][Math.floor(Math.random()*3)];
@@ -233,13 +349,59 @@ function vHome(){
   <div class="bab-grid space-y-2 lg:space-y-0">${LESSONS.map(l=>{let c=0;l.vocab.forEach((_,i)=>{if(SRS[key(l.id,i)]?.mem)c++;});const p=Math.round(c/l.vocab.length*100);const wk=Math.ceil(l.id/3.2);return `<div data-a="open" data-id="${l.id}" class="card card-hover p-3 flex items-center justify-between cursor-pointer anim"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl ${c===l.vocab.length?"bg-emerald-500":"hero"} flex items-center justify-center font-black text-white text-sm">${c===l.vocab.length?"✓":l.id}</div><div><div class="text-[13px] font-bold text-white">Bab ${l.id}: ${esc(l.title)}</div><div class="text-[11px] text-slate-400">Minggu ${wk} • ${c}/${l.vocab.length} • ${p}% • ${l.grammar.length} pola</div><div class="w-40 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden"><div class="h-full bg-gradient-to-r from-blue-600 to-sky-400 rounded-full transition-all" style="width:${p}%"></div></div></div></div><div class="text-slate-500">›</div></div>`;}).join("")}</div>`;
 }
 function vLessons(){return `<h2 class="font-extrabold text-white mb-2">📚 Semua Bab</h2><div class="bab-grid">`+LESSONS.map(l=>`<div data-a="open" data-id="${l.id}" class="card card-hover p-3 mb-2 lg:mb-0 flex justify-between cursor-pointer"><b class="text-sm text-white">Bab ${l.id}: ${esc(l.title)}</b><span class="text-xs text-sky-300">${l.vocab.length} kata • ${l.grammar.length} pola ›</span></div>`).join("")+`</div>`;}
+function vocabExHtml(lid,i){
+  try{
+    var fn=(typeof getVocabExamples==="function")?getVocabExamples:(window.getVocabExamples||null);
+    if(!fn) return "";
+    var arr=fn(lid,i)||[];
+    if(!arr.length) return "";
+    var out='<div class="mt-2 rounded-xl border border-blue-900/50 bg-slate-900/60 p-2"><div class="text-[10px] font-bold tracking-widest text-sky-300 mb-1">CONTOH KALIMAT ('+arr.length+')</div>';
+    arr.slice(0,3).forEach(function(s,n){
+      var pt="";
+      try{ pt=(typeof patternDetail==="function")?patternDetail(lid,Number(s.pat)).title:("Pola "+s.pat); }catch(e){ pt="Pola "+s.pat; }
+      out+='<div class="py-1.5 border-b border-blue-950 last:border-0"><div class="text-[10px] text-slate-400">\u2460\u2461\u2462'.charAt(n*1)+' '+(n+1)+' \u2022 '+esc(String(pt)).slice(0,60)+'</div>'
+        +'<div class="text-sm font-bold text-white jp-font">'+esc(s.jp)+'</div>'
+        +'<div class="mt-0.5">'+kanaLine(s.kana)+'</div>'
+        +'<div class="text-[11px] text-slate-300 mt-0.5">\uD83C\uDDEE\uD83C\uDDE9 '+esc(s.mean)+' <button data-a="speak" data-t="'+esc(s.kana||s.jp)+'" class="underline text-sky-300">\uD83D\uDD0A</button></div></div>';
+    });
+    return out+'</div>';
+  }catch(e){ return ""; }
+}
+function patVocabsHtml(lid,gi){
+  try{
+    var fn=(typeof getPatternVocabs==="function")?getPatternVocabs:(window.getPatternVocabs||null);
+    if(!fn) return "";
+    var keys=fn(lid,gi)||[];
+    if(!keys.length) return "";
+    var L=(typeof LESSONS!=="undefined")?LESSONS.find(function(x){return x.id===lid;}):null;
+    var show=keys.slice(0,10);
+    var out='<div class="card p-4 mt-2"><h3 class="text-xs font-bold text-sky-300 mb-1">\uD83D\uDCD6 KOSAKATA DENGAN POLA INI ('+keys.length+')</h3><p class="text-[11px] text-slate-400 mb-2">Klik 🔊 untuk dengar. Maks 10 ditampilkan agar ringan.</p>';
+    show.forEach(function(k){
+      var p=k.split("-"); var li=Number(p[0]), ii=Number(p[1]);
+      var W=(L&&li===lid)?(L.vocab[ii]||null):null;
+      if(!W&&typeof LESSONS!=="undefined"){ var LL=LESSONS.find(function(x){return x.id===li;}); if(LL) W=LL.vocab[ii]; }
+      if(!W) return;
+      var gfn=(typeof getVocabExamples==="function")?getVocabExamples:(window.getVocabExamples||null);
+      var arr=gfn? (gfn(li,ii)||[]) : [];
+      arr=arr.filter(function(s){return Number(s.pat)===Number(gi);}).slice(0,3);
+      if(!arr.length) return;
+      out+='<div class="bg-slate-900 border border-blue-900/50 rounded-xl p-2.5 mb-1.5 text-sm"><div class="font-bold text-white">'+ruby(W[0],W[1])+' <span class="text-[11px] font-normal text-slate-400">('+esc(W[1])+') \u2022 '+esc(W[3])+'</span></div>';
+      arr.forEach(function(s){
+        out+='<div class="mt-1.5 text-[13px]"><div class="text-sky-100 jp-font">'+esc(s.jp)+'</div><div class="mt-0.5">'+kanaLine(s.kana)+'</div><div class="text-[11px] text-slate-300">\uD83C\uDDEE\uD83C\uDDE9 '+esc(s.mean)+' <button data-a="speak" data-t="'+esc(s.kana||s.jp)+'" class="underline text-sky-300">\uD83D\uDD0A</button></div></div>';
+      });
+      out+='</div>';
+    });
+    if(keys.length>show.length) out+='<div class="text-[11px] text-slate-500">+'+(keys.length-show.length)+' kosakata lain memakai pola ini.</div>';
+    return out+'</div>';
+  }catch(e){ return ""; }
+}
 function vLessonDetail(id){
   const L=LESSONS.find(l=>l.id===id);let c=0;L.vocab.forEach((_,i)=>{if(SRS[key(id,i)]?.mem)c++;});
   return `<button data-a="back" class="text-xs text-sky-300 mb-2">‹ Kembali</button>
   <div class="card p-4 mb-3"><div class="chip w-fit">BAB ${L.id} • Minggu ${Math.ceil(L.id/3.2)}</div><h2 class="text-lg font-black text-white serif-jp">${esc(L.title)}</h2><div class="text-xs text-slate-400">${c}/${L.vocab.length} hafal</div>
   <div class="flex gap-2 mt-3"><button data-a="srs-bab" data-id="${L.id}" class="btn-pri text-xs px-3 py-2 rounded-xl">🎴 SRS Bab ini</button><button data-a="quiz-bab" data-id="${L.id}" class="btn-ghost text-xs px-3 py-2 rounded-xl">🎯 Kuis Bab</button><button data-a="pat-bab" data-id="${L.id}" class="btn-ghost text-xs px-3 py-2 rounded-xl">🧩 Pola</button></div></div>
   <h3 class="text-xs font-bold text-slate-300 mb-2">KOSAKATA (${L.vocab.length}) — Kanji besar, hiragana kuning jelas di bawah, 🔊 dengar</h3>
-  <div class="card divide-y divide-blue-950 mb-4">${L.vocab.map((v,i)=>{const k=key(id,i);const m=SRS[k]?.mem;return `<div class="p-3 flex items-center justify-between gap-2"><div class="min-w-0"><div>${ruby(v[0],v[1])}</div><div class="mt-1">${kanaLine(v[1],v[2])}</div><div class="mean-line">🇮🇩 ${esc(v[3])}</div>${SRS[k]?`<div class="text-[10px] text-sky-400/80 mt-1">SM-2: reps ${SRS[k].reps} • ease ${SRS[k].ease.toFixed(2)} • due ${SRS[k].interval<1?"hari ini":Math.round(SRS[k].interval)+"h"}</div>`:""}</div><div class="flex gap-1.5 shrink-0"><button data-a="speak" data-t="${esc(v[1]||v[0])}" class="btn-ghost rounded-lg px-2 py-1.5">🔊</button><button data-a="mem" data-l="${id}" data-i="${i}" class="rounded-lg px-2 py-1.5 text-xs font-bold ${m?"bg-emerald-500 text-white":"btn-ghost text-slate-300"}">${m?"✓ Hafal":"+ Hafal"}</button></div></div>`;}).join("")}</div>
+  <div class="card divide-y divide-blue-950 mb-4">${L.vocab.map((v,i)=>{const k=key(id,i);const m=SRS[k]?.mem;return `<div class="p-3 flex items-start justify-between gap-2"><div class="min-w-0 flex-1"><div>${ruby(v[0],v[1])}</div><div class="mt-1">${kanaLine(v[1],v[2])}</div><div class="mean-line">🇮🇩 ${esc(v[3])}</div>${SRS[k]?`<div class="text-[10px] text-sky-400/80 mt-1">SM-2: reps ${SRS[k].reps} • ease ${SRS[k].ease.toFixed(2)} • due ${SRS[k].interval<1?"hari ini":Math.round(SRS[k].interval)+"h"}</div>`:""}${vocabExHtml(id,i)}</div><div class="flex gap-1.5 shrink-0"><button data-a="speak" data-t="${esc(v[1]||v[0])}" class="btn-ghost rounded-lg px-2 py-1.5">🔊</button><button data-a="mem" data-l="${id}" data-i="${i}" class="rounded-lg px-2 py-1.5 text-xs font-bold ${m?"bg-emerald-500 text-white":"btn-ghost text-slate-300"}">${m?"✓ Hafal":"+ Hafal"}</button></div></div>`;}).join("")}</div>
   <h3 class="text-xs font-bold text-slate-300 mb-2">POLA KALIMAT RINGKAS</h3>
   <div class="space-y-2 mb-6">${L.grammar.map((g,gi)=>`<div data-a="pat-open" data-l="${id}" data-g="${gi}" class="card card-hover p-3 cursor-pointer text-xs"><span class="text-sky-200">${g}</span><div class="text-sky-400 text-[11px] mt-1">Pelajari + latihan →</div></div>`).join("")}</div>`;
 }
@@ -282,14 +444,35 @@ function vPat(){
   <p class="text-xs text-slate-400 mb-3">Pilih bab → pilih pola → baca bedah + contoh + latihan susun/isian/ubah bentuk.</p>
   <div class="bab-grid">${LESSONS.map(l=>`<div data-a="pat-bab" data-id="${l.id}" class="card card-hover p-3 cursor-pointer flex justify-between items-center"><div><b class="text-sm text-white">Bab ${l.id}: ${esc(l.title)}</b><div class="text-[11px] text-sky-300">${l.grammar.length} pola • ${Object.keys(PAT).filter(k=>k.startsWith(l.id+"-")).length} dikuasai</div></div><span>›</span></div>`).join("")}</div>`;
 }
+function hasKanji(s){ return /[\u4e00-\u9faf]/.test(String(s||"")); }
+function patTitleKana(t){
+  var s=String(t||"");
+  var rep=[
+    ["辞書形","じしょけい"],["丁寧体","ていねいたい"],["普通体","ふつうたい"],
+    ["ない形","ないけい"],["た形","たけい"],["趣味は","しゅみは"],
+    ["思います","おもいます"],["言いました","いいました"],["分かります","わかります"],
+    ["行きません","いきません"],["行きます","いきます"],["来ます","きます"],["帰ります","かえります"],
+    ["何を","なにを"],["何か","なにか"],["何ですか","なんですか"],["何歳","なんさい"],
+    ["何","なん"],["語","ご"],["好き","すき"],["嫌い","きらい"],["上手","じょうず"],["下手","へた"],
+    ["欲しい","ほしい"],["今","いま"],["中","なか"],["前に","まえに"],["〜時","〜じ"],["〜分","〜ふん"],["時","じ"],["分","ふん"],["形","けい"],["体","たい"]
+  ];
+  for(var i=0;i<rep.length;i++){ s=s.split(rep[i][0]).join(rep[i][1]); }
+  return s;
+}
 function vPatDetail(){
   const L=LESSONS.find(l=>l.id===S.patLesson);
-  if(S.patModeDetail==="list")return `<button data-a="pat-back" class="text-xs text-sky-300">‹ Semua pola</button><h2 class="font-black text-white mt-1">Bab ${L.id}: ${esc(L.title)}</h2><div class="space-y-2 mt-2">${L.grammar.map((g,gi)=>{const d=patternDetail(L.id,gi);const done=PAT[L.id+"-"+gi];return `<div data-a="pat-open" data-l="${L.id}" data-g="${gi}" class="card card-hover p-3 cursor-pointer"><div class="text-sm text-sky-100 font-bold">${esc(d.title)}</div><div class="text-xs text-slate-400">${esc(d.desc)}</div><div class="mt-1">${done?'<span class="chip">✓ dikuasai</span>':'<span class="chip">latihan →</span>'}</div></div>`;}).join("")}</div>`;
+  const legendHtml=`<div class="card p-3 mt-2 text-[11px] text-slate-300"><b class="text-sky-300">Legenda:</b> V = kata kerja, V-stem = kerja tanpa ます, N = benda, KS-i = sifat-i, KS-na = sifat-na, KB = pelengkap です, S = kalimat. Contoh: V-ないで = kata kerja bentuk-nai + で.</div>`;
+  if(S.patModeDetail==="list")return `<button data-a="pat-back" class="text-xs text-sky-300">‹ Semua pola</button><h2 class="font-black text-white mt-1">Bab ${L.id}: ${esc(L.title)}</h2>${legendHtml}<div class="space-y-2 mt-2">${L.grammar.map((g,gi)=>{const d=patternDetail(L.id,gi);const done=PAT[L.id+"-"+gi];return `<div data-a="pat-open" data-l="${L.id}" data-g="${gi}" class="card card-hover p-3 cursor-pointer"><div class="text-sm text-sky-100 font-bold">${esc(d.judul||d.title)}</div><div class="text-xs text-slate-400">${esc(d.rumus||d.title)}</div><div class="text-xs text-slate-500 mt-0.5">${esc(d.desc).slice(0,90)}</div><div class="mt-1">${done?'<span class="chip">✓ dikuasai</span>':'<span class="chip">latihan →</span>'}</div></div>`;}).join("")}</div>`;
   const d=patternDetail(S.patLesson,S.patIdx);
   let ex=`<button data-a="pat-list" data-id="${S.patLesson}" class="text-xs text-sky-300">‹ Daftar pola Bab ${S.patLesson}</button>
-  <div class="hero rounded-2xl p-5 mt-2 text-white anim"><div class="text-[11px] opacity-80 tracking-widest">POLA • BAB ${S.patLesson}</div><h2 class="text-xl font-black">${esc(d.title)}</h2><p class="text-sm opacity-90 mt-1">${esc(d.desc)}</p><div class="text-[11px] mt-2 bg-black/25 rounded-xl p-2">💡 ${esc(d.tips)}</div></div>
+  <div class="hero rounded-2xl p-5 mt-2 text-white anim"><div class="text-[11px] opacity-80 tracking-widest">POLA • BAB ${S.patLesson} • NO.${S.patIdx+1}</div><h2 class="text-xl font-black">${esc(d.judul||d.title)}</h2>
+  <div class="mt-2 bg-black/25 rounded-xl p-2.5"><div class="text-[10px] tracking-widest opacity-70">RUMUS</div><div class="text-base font-bold">${esc(d.rumus||d.title)}</div>${hasKanji(d.title)?`<div class="text-[11px] opacity-85 mt-1">Cara baca: ${esc(d.titleKana||"")}</div>`:""}</div>
+  <p class="text-sm opacity-90 mt-2">${esc(d.desc)}</p>${d.pakai?`<div class="text-[11px] mt-2 bg-black/25 rounded-xl p-2">📌 ${esc(d.pakai)}</div>`:""}</div>
+  ${legendHtml}
   <div class="card p-4 mt-2"><h3 class="text-xs font-bold text-sky-300 mb-2">BEDAH STRUKTUR</h3><div class="text-xs bg-slate-900 border border-blue-900 rounded-xl p-2.5 text-slate-200">${esc(d.raw)}</div>
-  <h3 class="text-xs font-bold text-sky-300 mt-3 mb-2">CONTOH + SUARA (kanji + hiragana kuning jelas)</h3>${d.ex.map(e=>`<div class="flex justify-between items-center gap-2 bg-slate-900 border border-blue-900/50 rounded-xl p-2.5 mb-1.5 text-sm"><div><div class="font-bold text-white text-base">${esc(e[0])}</div><div class="mt-1"><span class="kana-line">${esc(e[1])}</span></div><div class="text-[11px] text-slate-300 mt-1">🇮🇩 ${esc(e[2])}</div></div><button data-a="speak" data-t="${esc(e[1])}" class="btn-ghost rounded-lg px-2 py-1.5 shrink-0">🔊</button></div>`).join("")}</div>
+  <div class="mt-2 text-[11px] bg-black/25 rounded-xl p-2">💡 ${esc(d.tips)}</div>${d.salah?`<div class="text-[11px] mt-2 bg-red-900/30 border border-red-500/40 rounded-xl p-2">⛔ Salah umum: ${esc(d.salah)}</div>`:""}${d.beda?`<div class="text-[11px] mt-2 bg-emerald-900/30 border border-emerald-500/40 rounded-xl p-2">🔀 Bedanya: ${esc(d.beda)}</div>`:""}</div>
+  <div class="card p-4 mt-2"><h3 class="text-xs font-bold text-sky-300 mb-1">CONTOH + SUARA</h3><p class="text-[11px] text-slate-400 mb-2">Kanji dibaca via baris kuning. 🔊 memakai kana agar pelafalan akurat.</p>${d.ex.map(e=>`<div class="flex justify-between items-center gap-2 bg-slate-900 border border-blue-900/50 rounded-xl p-2.5 mb-1.5 text-sm"><div><div class="font-bold text-white text-base jp-font">${esc(e[0])}</div><div class="mt-1"><span class="kana-line">${esc(e[1])}</span></div><div class="text-[11px] text-slate-300 mt-1">🇮🇩 ${esc(e[2])}</div></div><button data-a="speak" data-t="${esc(e[1]||e[0])}" class="btn-ghost rounded-lg px-2 py-1.5 shrink-0">🔊</button></div>`).join("")}</div>
+  ${patVocabsHtml(S.patLesson,S.patIdx)}
   <div class="card p-4 mt-2"><h3 class="text-xs font-bold text-white mb-2">✍️ LATIHAN POLA</h3><div id="pat-q">${patQHtml()}</div></div>`;
   return ex;
 }
